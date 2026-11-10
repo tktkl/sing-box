@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.."
+mkdir -p .cache
+verify() {
+    if command -v sha256sum >/dev/null; then sha256sum "$1" | cut -d ' ' -f1; else shasum -a 256 "$1" | cut -d ' ' -f1; fi
+}
+fetch() {
+    local url=$1 file=$2 expected=$3
+    if [[ ! -f $file ]]; then curl --fail --location --silent --show-error --retry 3 --max-time 300 "$url" -o "$file"; fi
+    [[ $(verify "$file") == "$expected" ]] || { printf 'Checksum mismatch: %s\n' "$file" >&2; exit 1; }
+}
+for arch in arm64 amd64; do
+    asset="sing-box-1.14.4-linux-$arch.tar.gz"
+    fetch "$(jq -r --arg a "$asset" '.assets[$a].url' dependencies.lock.json)" ".cache/core-linux-$arch.tar.gz" "$(jq -r --arg a "$asset" '.assets[$a].sha256' dependencies.lock.json)"
+done
+fetch "$(jq -r '.nginx.source_url' dependencies.lock.json)" .cache/nginx-1.30.6.tar.gz "$(jq -r '.nginx.sha256' dependencies.lock.json)"
+fetch "$(jq -r '.geoip_cn.url' dependencies.lock.json)" .cache/geoip-cn.srs "$(jq -r '.geoip_cn.sha256' dependencies.lock.json)"
+fetch "$(jq -r '.test_ca_bundle.url' dependencies.lock.json)" .cache/cacert.pem "$(jq -r '.test_ca_bundle.sha256' dependencies.lock.json)"
+while IFS=$'\t' read -r name url digest; do fetch "$url" ".cache/$name" "$digest"; done < <(jq -r '.pebble.assets|to_entries[]|[.key,.value.url,.value.sha256]|@tsv' dependencies.lock.json)

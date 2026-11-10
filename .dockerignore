@@ -1,0 +1,10 @@
+**
+!tests/
+!tests/docker/
+!tests/docker/Dockerfile
+!.cache/
+!.cache/core-linux-*.tar.gz
+!.cache/nginx-1.30.6.tar.gz
+!.cache/geoip-cn.srs
+!.cache/cacert.pem
+!dependencies.lock.json

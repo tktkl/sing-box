@@ -1,0 +1,39 @@
+services:
+  server:
+    image: ${SB_TEST_IMAGE:-sb-manager-test:local}
+    init: true
+    entrypoint: ["sleep", "infinity"]
+    environment: &manager
+      SB_ROOT: /state/manager
+      SB_SERVICE_MODE: process
+      SB_CORE: /usr/local/bin/sb-core
+    volumes: ["../..:/workspace:ro"]
+    tmpfs: ["/state:mode=0700,exec", "/tmp"]
+    networks: [test]
+  exit:
+    image: ${SB_TEST_IMAGE:-sb-manager-test:local}
+    init: true
+    entrypoint: ["sleep", "infinity"]
+    environment: *manager
+    volumes: ["../..:/workspace:ro"]
+    tmpfs: ["/state:mode=0700,exec", "/tmp"]
+    networks: [test]
+  client:
+    image: ${SB_TEST_IMAGE:-sb-manager-test:local}
+    init: true
+    entrypoint: ["sleep", "infinity"]
+    volumes: ["../..:/workspace:ro"]
+    tmpfs: ["/state:mode=0700,exec", "/tmp"]
+    networks: [test]
+  target:
+    image: ${SB_TEST_IMAGE:-sb-manager-test:local}
+    init: true
+    entrypoint: ["python3", "/workspace/tests/target.py"]
+    volumes: ["../..:/workspace:ro"]
+    tmpfs: ["/state:mode=0700,exec", "/tmp"]
+    networks:
+      test:
+        aliases: ["target.test"]
+networks:
+  test:
+    internal: true
