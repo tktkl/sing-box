@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.."
+version=$(cat VERSION)
+temporary=$(mktemp -d)
+trap 'rm -rf -- "$temporary"' EXIT
+mkdir -p "$temporary/sb-manager-$version" .test-output/releases
+for path in bin lib jq scripts docs VERSION dependencies.lock.json install.sh LICENSE README.md; do cp -a "$path" "$temporary/sb-manager-$version/$path"; done
+archive=".test-output/releases/sb-manager-$version.tar.gz"
+tar -czf "$archive" -C "$temporary" "sb-manager-$version"
+if command -v sha256sum >/dev/null; then sha256sum "$archive"; else shasum -a 256 "$archive"; fi > "$archive.sha256"
+printf '%s\n' "$archive"
