@@ -1,0 +1,5 @@
+.cache/
+.test-output/
+*.log
+.DS_Store
+__pycache__/

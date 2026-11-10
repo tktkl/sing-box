@@ -1,0 +1,2 @@
+# Modules are sourced through the fixed, root-owned module list in bin/sb.
+disable=SC1090

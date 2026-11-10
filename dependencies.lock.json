@@ -1,0 +1,52 @@
+{
+  "core_version": "1.14.4",
+  "assets": {
+    "sing-box-1.14.4-darwin-arm64.tar.gz": {
+      "url": "https://github.com/SagerNet/sing-box/releases/download/v1.14.4/sing-box-1.14.4-darwin-arm64.tar.gz",
+      "sha256": "0d8c7f5ed5d587b0f1a5e9772a708ec3bfa4ac4c9329604b01d8d9c2ba406838"
+    },
+    "sing-box-1.14.4-linux-amd64.tar.gz": {
+      "url": "https://github.com/SagerNet/sing-box/releases/download/v1.14.4/sing-box-1.14.4-linux-amd64.tar.gz",
+      "sha256": "699a1b510aa4396b2176d32d1181920399ebf1e267835da6f3b598d0f7c24968"
+    },
+    "sing-box-1.14.4-linux-arm64.tar.gz": {
+      "url": "https://github.com/SagerNet/sing-box/releases/download/v1.14.4/sing-box-1.14.4-linux-arm64.tar.gz",
+      "sha256": "436441f76ee2f7fe21b5b2d426d3cb261a480455a704865789ad533e4273ec26"
+    }
+  },
+  "geoip_cn": {
+    "revision": "eb32cd6ed4a16fcb3bf9a36ccebf28e45716ae84",
+    "url": "https://raw.githubusercontent.com/SagerNet/sing-geoip/eb32cd6ed4a16fcb3bf9a36ccebf28e45716ae84/geoip-cn.srs",
+    "sha256": "81ada5cafd9d831adc48776f29cdfe55c9713d9287caeef9de925ef30f66cce4"
+  },
+  "nginx": {
+    "version": "1.30.6",
+    "source_url": "https://nginx.org/download/nginx-1.30.6.tar.gz",
+    "sha256": "3cf46f5ed7504d460125866b7bea99fb357f31d887e2e63b35503310e9b8b6c8"
+  },
+  "test_ca_bundle": {
+    "url": "https://curl.se/ca/cacert.pem",
+    "sha256": "427c064216761a1e72a8b30f0d954d08cb6e4435a82091fb865afd20c8497285"
+  },
+  "pebble": {
+    "version": "2.10.1",
+    "assets": {
+      "pebble-challtestsrv-linux-amd64.tar.gz": {
+        "url": "https://github.com/letsencrypt/pebble/releases/download/v2.10.1/pebble-challtestsrv-linux-amd64.tar.gz",
+        "sha256": "e93a5aa25ecdf3af2f9fbb2de32b0173e64a2eae81002a4ccfe35fa6f4f60b92"
+      },
+      "pebble-challtestsrv-linux-arm64.tar.gz": {
+        "url": "https://github.com/letsencrypt/pebble/releases/download/v2.10.1/pebble-challtestsrv-linux-arm64.tar.gz",
+        "sha256": "db8e1a79ccdb2195c489fbe4f40fddb7f30e86f9cd8a07912566ee5025094d6c"
+      },
+      "pebble-linux-amd64.tar.gz": {
+        "url": "https://github.com/letsencrypt/pebble/releases/download/v2.10.1/pebble-linux-amd64.tar.gz",
+        "sha256": "4f2fcb5bca8c85c9cf73ad140fccfc0d2be40bd81ab99879c79b7b8a0b4f70ed"
+      },
+      "pebble-linux-arm64.tar.gz": {
+        "url": "https://github.com/letsencrypt/pebble/releases/download/v2.10.1/pebble-linux-arm64.tar.gz",
+        "sha256": "b53fd072a69eb7692451de4e8b0667e0bdf5cccd7e36fc51b8eaf2fcc135ed9f"
+      }
+    }
+  }
+}
