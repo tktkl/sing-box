@@ -4,7 +4,7 @@ permissions:
   contents: read
 jobs:
   logic:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
@@ -19,7 +19,7 @@ jobs:
           docker build --platform linux/${{ matrix.arch }} --build-arg "BASE=$base" -f tests/docker/matrix.Dockerfile -t sb-test .
           docker run --rm --init --platform linux/${{ matrix.arch }} -v "$PWD:/workspace:ro" sb-test bash tests/unit.sh
   integration:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - run: make test-image PLATFORM=linux/amd64
@@ -32,3 +32,4 @@ jobs:
         with:
           name: integration-results
           path: .test-output/
+          include-hidden-files: true
