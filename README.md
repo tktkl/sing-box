@@ -8,10 +8,18 @@
 
 面向 Debian 12/13、Ubuntu 22.04/24.04/26.04，amd64/arm64。各环境实际验证结果见 [验证记录](docs/VERIFICATION.md)。
 
-先取得并检查本仓库，再在目标 Linux 上运行：
+在目标 Linux 上下载正式 Release 的独立安装器执行：
 
 ```bash
-git clone git@github.com:tktkl/sing-box.git
+curl -fsSL https://github.com/tktkl/sing-box/releases/download/v0.1.0/install.sh -o sb-install.sh && sudo bash sb-install.sh --address YOUR_PUBLIC_IP
+```
+
+把 `YOUR_PUBLIC_IP` 替换为服务器公网 IP。独立入口下载同版本正式发布包，验证 SHA-256 和包结构后执行；脚本为 `0.1.0`，内核为 `1.14.4`。下载或校验失败即停止。
+
+也可以取得并检查完整仓库后安装；公开仓库使用 HTTPS，不需要配置 GitHub SSH 密钥：
+
+```bash
+git clone https://github.com/tktkl/sing-box.git
 cd sing-box
 sudo bash install.sh --address YOUR_PUBLIC_IP
 ```
@@ -96,7 +104,7 @@ DNS、默认屏蔽、证书、进程和更新可能影响多个节点，菜单�
 
 备份包含运行凭据、证书和状态，文件权限 `0600`；**排除 Cloudflare Token**。恢复后要重新配置 Token 才能续期。导入默认预览；未知行为拒绝转换。`--takeover` 显式授权停止已知旧核心服务，不修改旧脚本目录。
 
-内核更新只接受锁定兼容清单中的版本。脚本更新使用版本化 GitHub release；发布前可用 `sb update sh --from /path/to/verified/release`。卸载移除本项目服务及快捷命令，保留数据，供备份或人工清理。
+内核更新只接受锁定兼容清单中的版本。稳定安装器和源码包通过 [GitHub Release](https://github.com/tktkl/sing-box/releases/latest) 发布，`sb update sh` 自动获取稳定 Release，也可用 `sb update sh 0.1.0` 指定版本，或 `sb update sh --from /path/to/verified/source` 从本地完整源码升级。推送与 `VERSION` 一致的 `v*` 标签会触发 Release 工作流，生成并验证附件。卸载移除本项目服务及快捷命令，保留数据，供备份或人工清理。
 
 重装或升级先用新脚本校验现有节点和 Nginx 配置，再切换脚本版本；失败恢复旧脚本和服务定义。锁定内核的下载缓存位于配置目录的 `cache/`，每次使用都检查 SHA-256。`fix-nginx` 强制重建并验证模板，不更换节点凭据或重启 sing-box。
 

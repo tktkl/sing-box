@@ -1,7 +1,46 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 (( BASH_VERSINFO[0] >= 5 )) || { printf 'Requires Bash 5+\n' >&2; exit 1; }
-SB_HOME=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)
+bootstrap_install() (
+    set -Eeuo pipefail
+    (( EUID == 0 )) || { printf '请使用 sudo 或 root 运行安装器\n' >&2; exit 1; }
+    [[ $(uname -s) == Linux ]] || { printf '安装仅支持 Linux\n' >&2; exit 1; }
+    local dependency temporary release_version release_base archive digest member kind
+    for dependency in curl tar gzip sha256sum; do
+        command -v "$dependency" >/dev/null || { printf '缺少安装引导依赖: %s\n' "$dependency" >&2; exit 1; }
+    done
+    # Standalone installers are versioned with their release and always load
+    # the matching complete package, never mutable main-branch modules.
+    release_version=0.1.0
+    archive="sb-manager-$release_version.tar.gz"
+    release_base="https://github.com/tktkl/sing-box/releases/download/v$release_version"
+    temporary=$(mktemp -d)
+    trap 'rm -rf -- "$temporary"' EXIT
+    printf '下载并验证 sb-manager v%s 正式发布包\n' "$release_version" >&2
+    for member in "$archive.sha256" "$archive"; do
+        curl --fail --location --silent --show-error --proto '=https' --tlsv1.2 \
+            --connect-timeout 15 --max-time 300 --retry 3 --retry-all-errors \
+            "$release_base/$member" --output "$temporary/$member"
+    done
+    read -r digest member < "$temporary/$archive.sha256"
+    [[ $digest =~ ^[a-f0-9]{64}$ && $member == "$archive" ]] || { printf '发布校验格式无效\n' >&2; exit 1; }
+    printf '%s  %s\n' "$digest" "$temporary/$archive" | sha256sum -c - >&2
+    tar -tzf "$temporary/$archive" > "$temporary/members"
+    while IFS= read -r member; do
+        [[ $member == "sb-manager-$release_version/"* && $member != *..* && $member != *\\* &&
+           $member =~ ^[a-zA-Z0-9_./-]+$ ]] || { printf '发布包路径无效\n' >&2; exit 1; }
+    done < "$temporary/members"
+    tar -tvzf "$temporary/$archive" > "$temporary/member-types"
+    while IFS= read -r kind; do
+        [[ ${kind:0:1} == d || ${kind:0:1} == - ]] || { printf '发布包不允许链接或特殊文件\n' >&2; exit 1; }
+    done < "$temporary/member-types"
+    tar --no-same-owner --no-same-permissions -xzf "$temporary/$archive" -C "$temporary"
+    [[ -f $temporary/sb-manager-$release_version/lib/common.sh && -f $temporary/sb-manager-$release_version/dependencies.lock.json ]] || { printf '发布包结构无效\n' >&2; exit 1; }
+    bash "$temporary/sb-manager-$release_version/install.sh" "$@"
+)
+SB_HOME=''
+if [[ -n ${BASH_SOURCE[0]:-} ]]; then SB_HOME=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P); fi
+if [[ -z $SB_HOME || ! -f $SB_HOME/lib/common.sh ]]; then bootstrap_install "$@"; exit; fi
 source "$SB_HOME/lib/common.sh"
 for module in links render service state certificates nodes maintenance install import cli; do source "$SB_HOME/lib/$module.sh"; done
 require_root
