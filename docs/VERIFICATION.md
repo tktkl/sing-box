@@ -22,6 +22,7 @@
 | 备份和导入 | Token 排除、0600 权限、完整性和路径检查、Certbot 执行钩子拒绝恢复、三套已知单节点格式导入通过 |
 | 卸载 | 保留节点、凭据、证书和无关 Nginx 文件；删除本项目服务和快捷命令通过 |
 | 应用中断恢复 | 配置指针切换后 SIGKILL 整个应用进程组；下一条命令恢复原节点字节、旧监听和事务状态，后续修改正常获得写锁 |
+| 正式 Release | `v0.1.0` 标签触发发布成功；四个公开附件下载及校验通过，独立安装器下载同版 Release、`sb update sh 0.1.0` 和完整 systemd 生命周期均通过 |
 
 完整协议、ACME、安装和 systemd 验收在 Ubuntu 24.04 arm64 执行。发行版矩阵运行逻辑测试及真实内核配置检查，不能等同于每个环境都完成全部协议验收。
 
@@ -57,7 +58,7 @@ systemd 容器使用独立 cgroup，启动 PID 1 前把 `/proc/sys/fs/binfmt_mis
 - **BBR 实际启用：未验证。** 容器拒绝修改共享内核的路径通过；仍需临时 Linux 虚拟机。
 - **Ubuntu 26.04 amd64：** 需要能支持其系统调用的模拟环境或原生 amd64 机器。
 - **发行版包仓库完整安装矩阵：未完成。** 九组逻辑结果不代表所有发行版的全新依赖安装、Certbot/Cloudflare 插件或 nginx.org 签名仓库安装都通过。Nginx 的 dpkg 本地测试包只验证安装时端口保护，不替代官方软件包验收。
-- **真实断电及正式 GitHub release 升级：未验证。** 已通过 SIGKILL 应用中断、进程启动失败、Nginx 失效重载和安装故障注入；没有将它们表述为断电测试。
+- **真实断电：未验证。** 已通过 SIGKILL 应用中断、进程启动失败、Nginx 失效重载和安装故障注入；没有将它们表述为断电测试。
 
 ## 可复现命令与证据
 
@@ -66,6 +67,7 @@ make test
 make test-e2e
 make test-systemd
 make test-install
+make test-bootstrap
 SB_TEST_OFFLINE=1 make test-install
 make test-acme-local
 make test-docker
@@ -76,3 +78,11 @@ make test-docker
 本机原始日志在 `.test-output/20261111/`，矩阵每轮独立保存在 `.test-output/matrix/<UTC>-<PID>/`，包含基础镜像摘要、测试镜像 ID、源码提交与未提交状态、构建/测试阶段及退出结果。协议测试保留每次 JSON 和 `last-success-e2e.json`，失败重跑不会覆盖最近成功证据。日志目录不进入 Git。
 
 有效报告应同时检查 JSON 状态与退出码，不能只看固定名称的最新日志。全部测试资源使用临时容器和隔离配置；没有挂载宿主真实凭据或修改防火墙。
+
+## 正式发布补充记录
+
+2026-11-11，[Release 工作流](https://github.com/tktkl/sing-box/actions/runs/42946195503) 成功发布 [v0.1.0](https://github.com/tktkl/sing-box/releases/tag/v0.1.0)。独立安装器、源码包、源码包校验文件和 `SHA256SUMS` 均可公开下载；下载所得安装器与标签源码一致。公开包一键安装和真实 `sb update sh 0.1.0` 均已在隔离 systemd 容器验证，升级前后节点记录保持一致。该轮内核使用已校验缓存；此前内核真实下载另已通过。
+
+日志：`.test-output/20261111/published-release-e2e.log`、`published-release-e2e.exit`（0），附件保留在同目录的 `published-v0.1.0/`。
+
+另已核查提交 `6393b38` 的 [GitHub Actions](https://github.com/tktkl/sing-box/actions/runs/42944161214)：10 组逻辑矩阵全部通过，包含原生 amd64 上的 Ubuntu 26.04；本机模拟环境失败记录仍保留。该次远程 integration 在 `make test-systemd` 失败，因此不能将整个 CI 标为通过。发布工作流、逻辑矩阵与本机 systemd 实测是分别记录的证据。
