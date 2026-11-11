@@ -4,8 +4,8 @@ ARG TARGETARCH
 ENV DEBIAN_FRONTEND=noninteractive
 COPY .cache/cacert.pem /etc/ssl/certs/ca-certificates.crt
 RUN sed -i 's|http://ports.ubuntu.com|https://ports.ubuntu.com|g;s|http://archive.ubuntu.com|https://archive.ubuntu.com|g;s|http://security.ubuntu.com|https://security.ubuntu.com|g' /etc/apt/sources.list /etc/apt/sources.list.d/*.sources 2>/dev/null || true
-RUN apt-get -o Acquire::Retries=3 -o Acquire::https::Timeout=30 update && \
-    apt-get -o Acquire::Retries=3 -o Acquire::https::Timeout=30 install -y \
+RUN apt-get -o Acquire::Retries=3 -o Acquire::https::Timeout=30 -o Acquire::https::CaInfo=/etc/ssl/certs/ca-certificates.crt -o APT::Update::Error-Mode=any update && \
+    apt-get -o Acquire::Retries=3 -o Acquire::https::Timeout=30 -o Acquire::https::CaInfo=/etc/ssl/certs/ca-certificates.crt install -y \
       bash jq curl ca-certificates openssl iproute2 util-linux procps coreutils \
       python3 make gcc libpcre2-dev zlib1g-dev libssl-dev shellcheck socat \
       systemd systemd-sysv dbus certbot python3-certbot-dns-cloudflare qrencode git xz-utils && \

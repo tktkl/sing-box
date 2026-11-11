@@ -98,6 +98,8 @@ DNS、默认屏蔽、证书、进程和更新可能影响多个节点，菜单�
 
 内核更新只接受锁定兼容清单中的版本。脚本更新使用版本化 GitHub release；发布前可用 `sb update sh --from /path/to/verified/release`。卸载移除本项目服务及快捷命令，保留数据，供备份或人工清理。
 
+重装或升级先用新脚本校验现有节点和 Nginx 配置，再切换脚本版本；失败恢复旧脚本和服务定义。锁定内核的下载缓存位于配置目录的 `cache/`，每次使用都检查 SHA-256。`fix-nginx` 强制重建并验证模板，不更换节点凭据或重启 sing-box。
+
 ## 开发与测试
 
 ```bash
@@ -105,11 +107,16 @@ make test-image
 make test
 make test-e2e
 make test-systemd
+make test-install
 make test-acme-local
 make test-docker
 ```
 
 测试镜像、内核、Nginx、规则集和 ACME 工具锁定校验值。测试仅使用隔离的网络、临时文件和假证书，不挂载宿主真实配置。systemd 验收使用特权隔离容器；BBR 在容器里拒绝修改内核参数。
+
+`test-install` 调用公开安装器，随后验证真实服务、升级及卸载。网络受限时可用 `SB_TEST_OFFLINE=1 make test-install`，把已下载的锁定内核放入容器的正常缓存；这不算外部下载路径验收通过。`test-acme-local` 使用一小时有效期的测试证书，调用正式 `sb cert renew`，验证续期钩子和实际部署。
+
+矩阵日志和 JSON 结果按运行分别保存在 `.test-output/matrix/`，包含镜像摘要、源码提交及未提交状态。可用 `SB_TEST_DISTROS='debian-12 ubuntu-24.04' SB_TEST_ARCHES=amd64 make test-docker` 缩小范围。完整发行版矩阵验证逻辑及内核配置，真实协议测试单独执行。
 
 真实 Cloudflare staging 验收单独执行，使用测试域名和通过隐藏输入配置的 Token。它不会把 staging 证书部署给生产节点。
 

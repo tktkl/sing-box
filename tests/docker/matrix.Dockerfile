@@ -4,8 +4,8 @@ ARG TARGETARCH
 ENV DEBIAN_FRONTEND=noninteractive SB_CORE=/usr/local/bin/sb-core
 COPY .cache/cacert.pem /etc/ssl/certs/ca-certificates.crt
 RUN find /etc/apt -type f \( -name '*.list' -o -name '*.sources' \) -exec sed -i -E 's#http://(ports.ubuntu.com|archive.ubuntu.com|security.ubuntu.com|deb.debian.org|security.debian.org)#https://\1#g' {} + && \
-    apt-get -o Acquire::Retries=3 -o Acquire::https::Timeout=30 update && \
-    apt-get -o Acquire::Retries=3 -o Acquire::https::Timeout=30 install -y --no-install-recommends \
+    apt-get -o Acquire::Retries=3 -o Acquire::https::Timeout=30 -o Acquire::https::CaInfo=/etc/ssl/certs/ca-certificates.crt -o APT::Update::Error-Mode=any update && \
+    apt-get -o Acquire::Retries=3 -o Acquire::https::Timeout=30 -o Acquire::https::CaInfo=/etc/ssl/certs/ca-certificates.crt install -y --no-install-recommends \
       bash jq curl ca-certificates openssl iproute2 util-linux procps coreutils shellcheck tar gzip && \
     rm -rf /var/lib/apt/lists/*
 COPY .cache/core-linux-${TARGETARCH}.tar.gz /tmp/core.tar.gz
