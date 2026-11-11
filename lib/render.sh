@@ -25,7 +25,9 @@ render_nginx_server() {
     if [[ $protocol != website ]]; then
         path=$(jq -r .path <<< "$item"); backend=$(jq -r .backend_port <<< "$item")
         printf '  location ^~ %s {\n    proxy_pass http://127.0.0.1:%s;\n' "$(nginx_quote "$path")" "$backend"
-        printf '    proxy_set_header Host %s;\n    proxy_set_header X-Forwarded-For $remote_addr;\n    proxy_buffering off;\n    proxy_request_buffering off;\n    proxy_read_timeout 1d;\n    proxy_send_timeout 1d;\n    client_max_body_size 0;\n' "$(nginx_quote "$domain")"
+        # H2 keeps the request body open for uploads; its idle timer is separate
+        # from the upstream proxy timers and defaults to only 60 seconds.
+        printf '    proxy_set_header Host %s;\n    proxy_set_header X-Forwarded-For $remote_addr;\n    proxy_buffering off;\n    proxy_request_buffering off;\n    proxy_read_timeout 1d;\n    proxy_send_timeout 1d;\n    client_body_timeout 1d;\n    send_timeout 1d;\n    client_max_body_size 0;\n' "$(nginx_quote "$domain")"
         case $protocol in
             *-h2-tls) printf '    proxy_http_version 2;\n    proxy_set_header Connection "";\n';;
             *) printf '    proxy_http_version 1.1;\n    proxy_set_header Upgrade $http_upgrade;\n    proxy_set_header Connection "upgrade";\n';;
@@ -38,6 +40,7 @@ render_nginx() {
     local state=$1 directory=$2 generation=$3 domain item cert file
     mkdir -p "$directory/domains"
     printf '%s\n' "$generation" > "$directory/generation"
+    hash_file "$SB_HOME/lib/render.sh" > "$directory/template.sha256"
     while IFS= read -r domain; do
         [[ -n $domain ]] || continue
         valid_domain "$domain" || die 'Nginx 域名无效'

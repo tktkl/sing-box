@@ -105,7 +105,9 @@ _apply_state() (
     if ! has_nginx "$old" && has_nginx "$state"; then wantnginx=true; fi
     cmp -s "$SB_ROOT/current/config.json" "$directory/config.json" && [[ ${SB_FORCE_CORE:-0} != 1 ]] || cc=true
     # Domain configuration contains a generation marker; compare resource state instead.
-    if [[ $(nginx_fingerprint "$old") != "$(nginx_fingerprint "$state")" ]]; then nc=true; fi
+    if [[ $(nginx_fingerprint "$old") != "$(nginx_fingerprint "$state")" ||
+          $(cat "$SB_ROOT/current/nginx/template.sha256" 2>/dev/null || true) != "$(cat "$directory/nginx/template.sha256")" ||
+          ${SB_FORCE_NGINX:-0} == 1 ]]; then nc=true; fi
     # Preserve nginx bytes when nothing it serves changes, so health markers stay truthful.
     if [[ $nc == false ]]; then
         rm -rf "$directory/nginx"; cp -a "$SB_ROOT/current/nginx" "$directory/nginx"

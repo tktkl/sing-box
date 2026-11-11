@@ -6,13 +6,15 @@ fresh_root
 export SB_SERVICE_MODE=process
 "$CLI" add socks 28381 route-user route-pass >/dev/null
 "$CLI" log debug
-for address in 127.0.0.1 '[::1]' 114.114.114.114; do
+for address in 0.1.2.3 127.0.0.1 '[::1]' 10.0.0.1 100.64.0.1 192.0.2.1 198.18.0.1 \
+    198.51.100.1 203.0.113.1 224.0.0.1 240.0.0.1 '[fc00::1]' '[64:ff9b:1::1]' \
+    '[100::1]' '[2001:2::1]' '[2001:10::1]' '[2001:20::1]' '[2001:db8::1]' '[3fff::1]' '[fec0::1]' 114.114.114.114; do
     : > "$SB_ROOT/logs/core.log"
     must_fail curl --noproxy '' --silent --fail --max-time 4 --proxy socks5h://route-user:route-pass@127.0.0.1:28381 "http://$address:8000/"
-    grep -q 'reject' "$SB_ROOT/logs/core.log"
+    grep -q 'reject' "$SB_ROOT/logs/core.log" || { note "目标 $address 未在路由阶段拒绝"; cat "$SB_ROOT/logs/core.log" >&2; exit 1; }
     if grep -q 'outbound/direct' "$SB_ROOT/logs/core.log"; then die '被屏蔽的目标触发了出口拨号'; fi
 done
-pass 'real IPv4 private, IPv6 private and Chinese IP requests rejected before dialing'
+pass 'real IPv4/IPv6 private, shared, reserved, benchmark and Chinese IP requests rejected before dialing'
 cat > "$SB_ROOT/run/dns.py" <<'PY'
 import socket,struct
 sock=socket.socket(socket.AF_INET,socket.SOCK_DGRAM)

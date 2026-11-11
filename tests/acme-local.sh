@@ -32,7 +32,7 @@ cp /opt/test-assets/geoip-cn.srs "$SB_ROOT/rules/geoip-cn.srs"
 /workspace/bin/sb init --address 127.0.0.1
 openssl req -x509 -newkey ec -pkeyopt ec_paramgen_curve:prime256v1 -nodes -days 2 -subj /CN=localhost \
   -addext subjectAltName=DNS:localhost,IP:127.0.0.1 -keyout /state/pebble.key -out /state/pebble.pem >/dev/null 2>&1
-printf '{"pebble":{"listenAddress":"127.0.0.1:14000","managementListenAddress":"127.0.0.1:15000","certificate":"/state/pebble.pem","privateKey":"/state/pebble.key","httpPort":5002,"tlsPort":5001,"externalAccountBindingRequired":false,"retryAfter":{"authz":1,"order":1}}}\n' >/state/pebble.json
+printf '{"pebble":{"listenAddress":"127.0.0.1:14000","managementListenAddress":"127.0.0.1:15000","certificate":"/state/pebble.pem","privateKey":"/state/pebble.key","httpPort":5002,"tlsPort":5001,"externalAccountBindingRequired":false,"retryAfter":{"authz":1,"order":1},"profiles":{"default":{"description":"One-hour renewal fixture","validityPeriod":3600}}}}\n' >/state/pebble.json
 dns=$(find /state/tools -type f -name pebble-challtestsrv | head -n1)
 pebble=$(find /state/tools -type f -name pebble | head -n1)
 chmod +x "$dns" "$pebble"
@@ -67,13 +67,14 @@ with_lock _save_certificates "[$record]"
 node=$(/workspace/bin/sb add trojan 29443 auto --cert-domain example.test --certificate "$id")
 [[ $(jq -r .protocol <<< "$node") == trojan ]]
 old=$(jq -r .version_dir <<< "$record")
-certbot renew --force-renewal --no-random-sleep-on-renew --non-interactive --server https://localhost:14000/dir \
-  --config-dir "$SB_ROOT/acme/config" --work-dir "$SB_ROOT/acme/work" --logs-dir "$SB_ROOT/logs/acme" \
-  --deploy-hook /workspace/scripts/certbot-deploy-hook
-[[ -f $SB_ROOT/run/renewed/$id.json ]]
-record=$(certificate_record "$id" '["example.test"]' test "$SB_ROOT/acme/config/live/$id/fullchain.pem" "$SB_ROOT/acme/config/live/$id/privkey.pem" false)
+# The short-lived profile makes normal renewal due, so exercise the complete
+# production renewal command, its queued hook and its batched state transaction.
+! openssl x509 -in "$old/fullchain.pem" -noout -checkend 7200 >/dev/null
+SB_ACME_SERVER=https://localhost:14000/dir /workspace/bin/sb cert renew example.test
+[[ ! -f $SB_ROOT/run/renewed/$id.json ]]
+jq -e '.certbot_exit_code==0' "$SB_ROOT/acme/renewal-status.json" >/dev/null
+record=$(read_state | jq --arg id "$id" '.certificates[]|select(.id==$id)')
 [[ $(jq -r .version_dir <<< "$record") != "$old" ]]
-with_lock _save_certificates "[$record]"
 expected=$(openssl x509 -in "$(jq -r .version_dir <<< "$record")/fullchain.pem" -noout -fingerprint -sha256)
 served=$(openssl s_client -connect 127.0.0.1:29443 -servername example.test </dev/null 2>/dev/null | openssl x509 -noout -fingerprint -sha256)
 [[ $expected == "$served" ]]

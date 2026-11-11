@@ -16,6 +16,9 @@ service_action() {
     local name=$1 action=$2 pidfile pid tries
     [[ $SB_SERVICE_MODE != none ]] || return 0
     if [[ $SB_SERVICE_MODE == systemd ]]; then
+        # Deliberate configuration commits and rollback starts must not consume
+        # the crash-loop budget left by previous managed restarts.
+        if [[ $name == core && ( $action == start || $action == restart ) ]]; then systemctl reset-failed "$SB_UNIT"; fi
         systemctl "$action" "$([[ $name == core ]] && printf %s "$SB_UNIT" || printf nginx.service)"
         return "$?"
     fi

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 download_core() {
-    local version=${1:-1.14.4} destination=${2:-$SB_CORE} arch asset url digest temp
+    local version=${1:-1.14.4} destination=${2:-$SB_CORE} arch asset url digest temp cached
     version=${version#v}
     [[ $version == "$(jq -r .core_version "$SB_HOME/dependencies.lock.json")" ]] || die '此版本没有兼容性锁定清单，拒绝降级或未经验证的升级'
     case $(uname -m) in aarch64|arm64) arch=arm64;; x86_64|amd64) arch=amd64;; *) die '仅支持 amd64/arm64';; esac
@@ -10,8 +10,9 @@ download_core() {
     [[ $url != null && $digest =~ ^[a-f0-9]{64}$ ]] || die '缺少内核下载校验值'
     mkdir -p "$SB_ROOT/cache" "$(dirname "$destination")"
     temp=$(mktemp -d "$SB_ROOT/cache/core.XXXXXXXX")
-    download "$url" "$temp/core.tar.gz" "$digest"
-    tar -xzf "$temp/core.tar.gz" -C "$temp"
+    cached="$SB_ROOT/cache/$asset"
+    if [[ ! -f $cached || $(hash_file "$cached") != "$digest" ]]; then download "$url" "$cached" "$digest"; fi
+    tar -xzf "$cached" -C "$temp"
     install -m 755 "$temp/sing-box-$version-linux-$arch/sing-box" "$destination"
     rm -rf -- "$temp"
 }

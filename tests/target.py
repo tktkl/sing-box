@@ -3,10 +3,14 @@ import http.server
 import socket
 import subprocess
 import threading
+import time
 
 
 class Handler(http.server.BaseHTTPRequestHandler):
     def do_GET(self):
+        if self.path == "/idle-75":
+            # No response bytes for longer than nginx's default 60-second timeout.
+            time.sleep(75)
         body = b"sb-manager-e2e-ok\n"
         self.send_response(200)
         self.send_header("Content-Length", str(len(body)))

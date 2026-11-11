@@ -6,6 +6,7 @@ import subprocess
 import sys
 import time
 from datetime import datetime, timezone
+from concurrent.futures import ThreadPoolExecutor
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 PROJECT = os.environ.get("SB_TEST_REUSE_PROJECT", "sb-e2e-" + str(os.getpid()))
@@ -165,6 +166,7 @@ chmod +x /state/fault-core
     http_ok()
     record("real process startup failure restores generation, service and connectivity")
     certificate_rotation(first)
+    nginx_long_connections()
 
 
 def certificate_rotation(first):
@@ -190,6 +192,50 @@ openssl req -x509 -newkey ec -pkeyopt ec_paramgen_curve:prime256v1 -nodes -days 
         configure_client(sb("server", "url", first).stdout.strip(), pin)
         http_ok(); udp_ok()
         record(f"{protocol}: renewed certificate verified with the new public-key pin")
+
+
+def nginx_long_connections():
+    uris = []
+    for index, protocol in enumerate(("wss", "h2", "hu")):
+        node = json.loads(sb("server", "add", protocol, "example.test", "auto", f"/idle-{protocol}",
+                             "--port", str(31101 + index), "--address", service_ip("server")).stdout)
+        uris.append(sb("server", "url", node["id"]).stdout.strip())
+    allow_fixture("server")
+    files = execute("server", ["find", "/state/manager/current/nginx/domains", "-type", "f", "-name", "*.conf"]).stdout.splitlines()
+    assert len(files) == 1 and files[0].endswith("/example.test.conf"), files
+    script("client", '''
+export SB_HOME=/workspace SB_CORE=/usr/local/bin/sb-core
+source /workspace/lib/common.sh
+source /workspace/lib/links.sh
+outs='[]'
+for uri in "$@"; do
+    out=$(outbound_from_uri "$uri")
+    outs=$(jq --argjson out "$out" '.+[$out]' <<< "$outs")
+done
+jq -n --argjson outs "$outs" '{log:{level:"debug"},
+  inbounds:[$outs|to_entries[]|{type:"mixed",tag:("client-"+(.key|tostring)),listen:"127.0.0.1",listen_port:(1081+.key)}],
+  outbounds:[$outs|to_entries[]|.value+{tag:("out-"+(.key|tostring))}],
+  dns:{servers:[{type:"local",tag:"dns"}]},
+  route:{default_domain_resolver:"dns",rules:[$outs|to_entries[]|{inbound:[("client-"+(.key|tostring))],action:"route",outbound:("out-"+(.key|tostring))}]}}
+' > /state/clients.json
+if [[ -f /state/client.pid ]]; then kill "$(cat /state/client.pid)" 2>/dev/null || true; sleep .1; fi
+nohup /usr/local/bin/sb-core run -c /state/clients.json </dev/null >/state/client.log 2>&1 &
+printf '%s\\n' "$!" > /state/client.pid
+sleep .3
+''', tuple(uris))
+
+    def request(index):
+        started = time.monotonic()
+        response = execute("client", ["curl", "--noproxy", "", "--fail", "--silent", "--show-error", "--max-time", "110",
+                                      "--socks5-hostname", f"127.0.0.1:{1081 + index}", "http://target:8000/idle-75"])
+        assert response.stdout == "sb-manager-e2e-ok\n", response.stdout
+        assert time.monotonic() - started >= 70, "idle target unexpectedly returned early"
+
+    with ThreadPoolExecutor(max_workers=3) as pool:
+        futures = [pool.submit(request, index) for index in range(3)]
+        for protocol, future in zip(("wss", "h2", "hu"), futures):
+            future.result()
+            record(f"nginx {protocol}: 75-second silent stream survives; same-domain ports share one configuration")
 
 
 if __name__ == "__main__":

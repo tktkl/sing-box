@@ -75,7 +75,7 @@ download() {
     local url=$1 destination=$2 digest=${3:-}
     [[ $url == https://* ]] || die '下载地址必须使用 HTTPS'
     curl --fail --location --silent --show-error --proto '=https' --tlsv1.2 \
-        --connect-timeout 15 --max-time 300 --retry 3 --output "$destination.part" "$url"
+        --connect-timeout 15 --max-time 300 --retry 3 --retry-all-errors --output "$destination.part" "$url"
     if [[ -n $digest && $(hash_file "$destination.part") != "$digest" ]]; then
         rm -f -- "$destination.part"; die '下载文件 SHA-256 不匹配'
     fi

@@ -156,7 +156,7 @@ main() {
         t|test) rules_verify; core check -c "$SB_ROOT/current/config.json"; status_report;;
         fix|fix-all|fix-config.json|fix-nginx)
             if [[ $cmd == fix && -n ${1:-} ]]; then select_node "$1" >/dev/null; fi
-            apply_state "$(read_state)";;
+            SB_FORCE_NGINX=1 apply_state "$(read_state)";;
         get-port) free_port "$(read_state)";;
         ip) detect_address;;
         debug) status_report; if (( $# )); then select_node "$1" | redact_json; else read_state | redact_json; fi;;

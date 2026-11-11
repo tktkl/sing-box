@@ -1,4 +1,20 @@
 #!/usr/bin/env bash
+preflight_install() (
+    set -Eeuo pipefail
+    local state directory
+    check_core_version
+    rules_verify
+    state=$(read_state)
+    jq -e -L "$SB_HOME/jq" 'include "model";valid_state' <<< "$state" >/dev/null || die '新版脚本无法读取现有节点'
+    directory=$(mktemp -d "$SB_ROOT/run/upgrade-check.XXXXXXXX")
+    trap 'rm -rf -- "$directory"' EXIT
+    write_generation "$state" "$directory"
+    core check -c "$directory/config.json"
+    if has_nginx "$state"; then
+        check_nginx_version "$state"
+        validate_nginx "$directory" || { cat "$directory/nginx-check.log" >&2; die '新版 Nginx 模板不兼容现有配置'; }
+    fi
+)
 install_release() {
     local source=$1 release version path wrapper
     version=$(cat "$source/VERSION"); [[ $version =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || die '脚本版本格式错误'
@@ -103,6 +119,27 @@ $SB_ROOT/logs/*.log {
 }
 EOF
 }
+install_nginx_package() (
+    set -Eeuo pipefail
+    local package=$1
+    [[ ! -e /etc/systemd/system/nginx.service && ! -L /etc/systemd/system/nginx.service &&
+       ! -e /run/systemd/system/nginx.service && ! -L /run/systemd/system/nginx.service ]] || die '已存在 Nginx 服务定义或屏蔽状态，拒绝自动替换'
+    systemctl cat nginx.service >/dev/null 2>&1 && die '已存在 Nginx 服务定义，拒绝自动替换'
+    [[ ! -e /etc/nginx/conf.d/default.conf && ! -L /etc/nginx/conf.d/default.conf ]] || die '已存在 Nginx 默认网站，拒绝覆盖'
+    finish_nginx_package() {
+        local rc=$?
+        trap - EXIT
+        # Only this fresh package can have created this file. Disable it before
+        # unmasking so package scripts can never expose an unsolicited port 80.
+        if [[ -f /etc/nginx/conf.d/default.conf ]]; then mv /etc/nginx/conf.d/default.conf /etc/nginx/conf.d/default.conf.sb-package-disabled; fi
+        systemctl unmask nginx.service
+        if (( rc != 0 )); then systemctl disable nginx.service >/dev/null 2>&1 || true; fi
+        exit "$rc"
+    }
+    trap finish_nginx_package EXIT
+    systemctl mask nginx.service
+    DEBIAN_FRONTEND=noninteractive apt-get install -y "$package" >&2
+)
 install_nginx() {
     command -v nginx >/dev/null && return 0
     [[ $SB_SERVICE_MODE == systemd ]] || die '缺少 Nginx；测试镜像需要显式安装锁定版本'
@@ -123,9 +160,7 @@ install_nginx() {
     apt-get update >&2
     version=$(apt-cache madison nginx | awk '{print $3}' | grep '^1\.30\.6-' | head -n1)
     [[ -n $version ]] || die '官方仓库没有锁定版本 Nginx 1.30.6'
-    DEBIAN_FRONTEND=noninteractive apt-get install -y "nginx=$version" >&2
-    # Disable only the fresh package's default website; DNS-01 requires no port 80.
-    if [[ -f /etc/nginx/conf.d/default.conf ]]; then mv /etc/nginx/conf.d/default.conf /etc/nginx/conf.d/default.conf.sb-package-disabled; fi
+    install_nginx_package "nginx=$version"
     rm -rf "$temp"
 }
 ensure_nginx_integration() {
