@@ -6,14 +6,14 @@ sing-box 多节点管理脚本，使用 `sb` 命令添加、修改、分享和�
 
 适用系统：Debian 12/13、Ubuntu 22.04/24.04/26.04，支持 amd64、arm64，需要 systemd。
 
-将下面的 `YOUR_PUBLIC_IP` 替换为服务器的公网 IPv4 或 IPv6 地址。
+安装时自动获取公网 IP，无需手动填写。
 
 ### root 用户
 
 ```bash
 apt-get update && apt-get install -y curl ca-certificates tar gzip coreutils
 curl -fsSL https://github.com/tktkl/sing-box/releases/latest/download/install.sh -o sb-install.sh && \
-  bash sb-install.sh --address YOUR_PUBLIC_IP
+  bash sb-install.sh
 ```
 
 ### 非 root 用户（有 sudo 权限）
@@ -21,15 +21,23 @@ curl -fsSL https://github.com/tktkl/sing-box/releases/latest/download/install.sh
 ```bash
 sudo apt-get update && sudo apt-get install -y curl ca-certificates tar gzip coreutils
 curl -fsSL https://github.com/tktkl/sing-box/releases/latest/download/install.sh -o sb-install.sh && \
-  sudo bash sb-install.sh --address YOUR_PUBLIC_IP
+  sudo bash sb-install.sh
 ```
 
 没有 sudo 权限时，先执行 `su -` 切换为 root，再按 root 用户的步骤安装。本脚本不支持无管理员权限安装。
 
+自动检测失败，或需要指定其他公网 IP 时，才添加 `--address`：
+
+```bash
+bash sb-install.sh --address YOUR_PUBLIC_IP
+```
+
+将 `YOUR_PUBLIC_IP` 替换为客户端实际连接的公网 IPv4 或 IPv6 地址；非 root 用户在命令前加 `sudo`。
+
 安装默认创建一个 REALITY 节点。只安装管理脚本、暂不创建节点，在安装命令末尾加 `--no-node`：
 
 ```bash
-bash sb-install.sh --address YOUR_PUBLIC_IP --no-node
+bash sb-install.sh --no-node
 ```
 
 非 root 用户执行该命令时同样加 `sudo`。安装后，请在服务器防火墙和云平台安全组放行节点使用的端口。
@@ -110,7 +118,7 @@ sb add anytls 24449 auto proxy.example.com
 sb add vws proxy.example.com auto /tunnel --port 24450
 ```
 
-默认通过安装时填写的公网 IP 连接，证书域名用于 TLS SNI。证书自动续期，也可以手动检查和续期：
+分享链接默认使用自动获取或手动指定的公网 IP，证书域名用于 TLS SNI。证书自动续期，也可以手动检查和续期：
 
 ```bash
 sb cert list
