@@ -50,8 +50,13 @@ for p in r rh2 ss tcp http quic ws wss h2 hu vws vh2 vhu tws th2 thu trojan hy2 
     jq --arg cert "$SB_ROOT/run/preview-cert.pem" --arg key "$SB_ROOT/run/preview-key.pem" \
        '.inbounds|=map(if .tls.certificate_path then .tls.certificate_path=$cert|.tls.key_path=$key else . end)' "$SB_ROOT/run/preview.json" > "$SB_ROOT/run/check.json"
     "$SB_CORE" check -c "$SB_ROOT/run/check.json"
+    # Core pinning must never become a client application-version filter.
+    jq -e 'all(..|objects;all(keys[];
+      (ascii_downcase|gsub("[_-]";"")) as $key |
+      (["minclientver","maxclientver","minclientversion","maxclientversion","clientversion","minimumclientversion","maximumclientversion"]|index($key))==null))' "$SB_ROOT/run/check.json" >/dev/null
+    jq -e 'all(..|strings;(contains("/path/to/") or contains("preview-certificate") or contains("YOUR_PUBLIC_IP"))|not)' "$SB_ROOT/run/check.json" >/dev/null
 done
-pass 'all 22 entry templates pass sing-box 1.14.4 validation'
+pass 'all 22 entry templates pass real-core validation without client-version filters or runtime placeholders'
 
 cert=$("$CLI" cert import example.test "$SB_ROOT/run/preview-cert.pem" "$SB_ROOT/run/preview-key.pem" --self-signed)
 assert_jq "$(read_state)" '.websites|length==0'
@@ -69,6 +74,7 @@ for p in ss tcp http quic ws r rh2 trojan hy2 tuic anytls socks wss h2 hu vws vh
     "$SB_CORE" check -c "$SB_ROOT/run/outbound.json"
 done
 pass 'all supported share formats round-trip to valid real-core outbounds'
+
 
 malicious_marker="$SB_ROOT/run/injected"
 must_fail outbound_from_uri 'vless://bad@127.0.0.1:443?x=1'
