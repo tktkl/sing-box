@@ -102,3 +102,7 @@ make test-docker
 原有逻辑测试、全部 22 种入口真实内核检查、54 项真实通信、路由拒绝和 SIGKILL 事务恢复回归通过。发布引导按 `VERSION` 校验同版安装包，损坏包及链接成员拒绝执行。没有开展真实 Cloudflare DNS-01 验收，既有外部验证边界继续适用。
 
 本轮日志保存于 `.test-output/20261113/`，包括 `unit.log`、`interactive-final.log`、`install.log`、`e2e-driver.log`、`static-release.log` 及对应退出码。
+
+[v0.1.1 发布工作流](https://github.com/tktkl/sing-box/actions/runs/43353773723) 成功，公开附件已下载并通过 SHA-256 校验。针对公开包再次运行真实 PTY 菜单测试通过；单文件安装入口在没有 `--no-node` 的情况下安装后节点为零，从公开 v0.1.0 升级至 v0.1.1 后节点数量、凭据和记录保持一致，随后完整 systemd 验收通过。本地 ACME 的正式续期及部署回归通过。
+
+公开包证据：`published-interactive.log`、`published-bootstrap.log`、`upgrade-0.1.0.log`、`acme.log`，对应退出码均为 0；附件位于 `published-v0.1.1/`。
