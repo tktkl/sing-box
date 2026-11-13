@@ -136,8 +136,12 @@ make test-docker
 | 通信与原服务 | 54 项真实协议通信、默认路由屏蔽、原配置 SIGKILL 恢复和真实 systemd 安装/升级/回退/卸载回归通过 |
 | 打包 | 新内核模块、字段解析文件和发布说明包含在发行包中，SHA-256 与命令帮助检查通过 |
 
-故障注入的 `1.99.0` 是测试包装器版本号，不能计为真实未来 sing-box 版本通过。官方最新稳定发布信息实际获取为 1.14.4；首次上一版本 API 请求遇到 GitHub 匿名 API 403 限流，该失败记录保留，真实跨版本升级另行记录。
+故障注入的 `1.99.0` 是测试包装器版本号，不能计为真实未来 sing-box 版本通过。官方最新稳定发布信息实际获取为 1.14.4；首次上一版本 API 请求遇到 GitHub 匿名 API 403 限流，该失败记录保留。
 
-本机额外尝试 amd64 内核更新套件时，容器连 `/bin/true` 都报 `Exec format error`，因此这次新增套件的 amd64 本机运行未通过环境入口；未重启或修改正被其他任务使用的 Docker，不把既有矩阵记录作为这次新增套件通过的证据。原生 amd64 CI 已增加内核更新故障套件。
+本机额外尝试 amd64 内核更新套件时，容器连 `/bin/true` 都报 `Exec format error`，因此这次新增套件的 amd64 本机运行未通过环境入口；未重启或修改正被其他任务使用的 Docker，不把既有矩阵记录作为这次新增套件通过的证据。[原生 amd64 CI](https://github.com/tktkl/sing-box/actions/runs/43386526816/job/131756200263) 的 `make test-core-update` 步骤已实际通过；这条结果不代表该工作流其他步骤全部通过。
 
 本轮证据位于 `.test-output/20261113/core-update/`：`static-final4.log`、`unit-final.log`、`interactive-final.log`、`faults-final3.log`、`field-final.log`、`install.log`、`e2e.log`、`package-final.log` 及对应退出码。以上通过项退出码均为 0；失败尝试另保留，不覆盖为成功。
+
+[v0.1.3 发布工作流](https://github.com/tktkl/sing-box/actions/runs/43386624886) 成功，四个 [公开附件](https://github.com/tktkl/sing-box/releases/tag/v0.1.3) 已下载并验证；压缩包 SHA-256 为 `81768f080d3c0c7334969ae0ff84518f69757ba4d91269ec8d10b5f5a639ae92`。针对下载解包后的实际发行文件再次运行完整内核更新故障套件通过。从公开 v0.1.2 安装后实际执行 `sb update sh 0.1.3`，节点记录及凭据保持一致，后续完整 systemd 安装升级回退验收通过。日志为 `published-faults.log`、`published-upgrade.log`，对应退出码均为 0。
+
+API 限流恢复后，`make test-core-update-live` 完成真实官方 **1.13.14 → 1.14.4** 跨版本升级：上一版本及目标版本均使用官方二进制和校验摘要；无版本号的 `--check` 保持旧二进制、原 PID 和配置不变，随后无版本号更新成功，节点记录字节一致，服务与原监听恢复正常；升级后修改端口成功，再次检查显示已是目标版本。此测试使用真实进程和官方网络请求，没有替换内核、版本输出或发布 API。日志 `live-official.log`，退出码 `live-official.exit` 为 0；先前限流和测试夹具目录错误的失败日志继续保留。
