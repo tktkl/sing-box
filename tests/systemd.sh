@@ -24,7 +24,7 @@ docker exec "$name" findmnt -n -o FSTYPE,OPTIONS /proc/sys/fs/binfmt_misc | grep
 docker exec -i -e SB_TEST_INSTALLER="${SB_TEST_INSTALLER:-0}" -e SB_TEST_OFFLINE="${SB_TEST_OFFLINE:-0}" -e SB_TEST_BOOTSTRAP="${SB_TEST_BOOTSTRAP:-0}" -e SB_TEST_RELEASE="${SB_TEST_RELEASE:-}" -e SB_TEST_FROM_RELEASE="${SB_TEST_FROM_RELEASE:-}" "$name" bash -s >.test-output/systemd.log 2>&1 <<'EOF'
 set -Eeuo pipefail
 export SB_HOME=/workspace SB_ROOT=/etc/sb-manager SB_CORE=/usr/local/lib/sb-manager/core/sing-box SB_SERVICE_MODE=systemd
-for module in common links render service state certificates nodes maintenance install import ui cli; do source "/workspace/lib/$module.sh"; done
+for module in common links render service state certificates nodes core maintenance install import ui cli; do source "/workspace/lib/$module.sh"; done
 mkdir -p /usr/local/lib/sb-manager/core "$SB_ROOT/rules"
 cp /opt/test-assets/geoip-cn.srs "$SB_ROOT/rules/geoip-cn.srs"
 if [[ $SB_TEST_INSTALLER == 1 ]]; then

@@ -18,6 +18,7 @@ init_layout() {
 init_manager() {
     local address=${1:-} state id
     init_layout
+    recover_transaction
     check_core_version
     if [[ ! -f $SB_ROOT/rules/geoip-cn.srs ]]; then
         download "$(jq -r .geoip_cn.url "$SB_HOME/dependencies.lock.json")" "$SB_ROOT/rules/geoip-cn.srs" "$(jq -r .geoip_cn.sha256 "$SB_HOME/dependencies.lock.json")"
@@ -66,6 +67,7 @@ rollback_transaction() {
     note '已恢复上一版配置与原服务状态'
 }
 recover_transaction() {
+    recover_core_update
     [[ -f $SB_ROOT/transaction.json ]] || return 0
     local phase; phase=$(jq -r .phase "$SB_ROOT/transaction.json")
     case $phase in switched|applying) rollback_transaction;; esac

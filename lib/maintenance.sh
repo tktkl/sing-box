@@ -1,21 +1,4 @@
 #!/usr/bin/env bash
-download_core() {
-    local version=${1:-1.14.4} destination=${2:-$SB_CORE} arch asset url digest temp cached
-    version=${version#v}
-    [[ $version == "$(jq -r .core_version "$SB_HOME/dependencies.lock.json")" ]] || die '此版本没有兼容性锁定清单，拒绝降级或未经验证的升级'
-    case $(uname -m) in aarch64|arm64) arch=arm64;; x86_64|amd64) arch=amd64;; *) die '仅支持 amd64/arm64';; esac
-    asset="sing-box-$version-linux-$arch.tar.gz"
-    url=$(jq -r --arg a "$asset" '.assets[$a].url' "$SB_HOME/dependencies.lock.json")
-    digest=$(jq -r --arg a "$asset" '.assets[$a].sha256' "$SB_HOME/dependencies.lock.json")
-    [[ $url != null && $digest =~ ^[a-f0-9]{64}$ ]] || die '缺少内核下载校验值'
-    mkdir -p "$SB_ROOT/cache" "$(dirname "$destination")"
-    temp=$(mktemp -d "$SB_ROOT/cache/core.XXXXXXXX")
-    cached="$SB_ROOT/cache/$asset"
-    if [[ ! -f $cached || $(hash_file "$cached") != "$digest" ]]; then download "$url" "$cached" "$digest"; fi
-    tar -xzf "$cached" -C "$temp"
-    install -m 755 "$temp/sing-box-$version-linux-$arch/sing-box" "$destination"
-    rm -rf -- "$temp"
-}
 backup_create() {
     local destination=${1:-$PWD/sb-manager-$(stamp).tar.gz} temp
     destination=$(realpath -m "$destination")
@@ -126,19 +109,6 @@ website_set() {
 }
 _website_set() { local state; state=$(read_state | jq --argjson w "$1" '.websites=(.websites|map(select(.domain!=$w.domain)))+[$w]'); _apply_state "$state"; }
 _website_delete() { local state; state=$(read_state | jq --arg d "$1" '.websites|=map(select(.domain!=$d))'); _apply_state "$state"; }
-update_core() {
-    local version=${1:-1.14.4} temp previous="$SB_CORE.previous"
-    temp=$(mktemp "$SB_ROOT/run/core.XXXXXXXX")
-    download_core "$version" "$temp"
-    "$temp" check -c "$SB_ROOT/current/config.json" >/dev/null || die '新内核不支持当前配置'
-    cp -p "$SB_CORE" "$previous"
-    install -m 755 "$temp" "$SB_CORE.new"; mv -f "$SB_CORE.new" "$SB_CORE"
-    if ! SB_FORCE_CORE=1 "$SB_HOME/bin/sb" fix-all; then
-        mv -f "$previous" "$SB_CORE"; service_action core restart
-        die '内核更新失败，已恢复旧内核'
-    fi
-    rm -f "$temp"
-}
 bbr_enable() {
     [[ -f /proc/sys/net/ipv4/tcp_available_congestion_control ]] || die '当前内核不提供拥塞控制信息'
     grep -qw bbr /proc/sys/net/ipv4/tcp_available_congestion_control || die '内核未提供 BBR；不加载宿主模块'

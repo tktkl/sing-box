@@ -17,9 +17,9 @@
 | 服务 | s/status、start/stop/restart、t/test | nginx 参数管理现有 Nginx 服务 |
 | 修复 | fix、fix-all、fix-config.json、fix-nginx | 从节点记录重建；不更换凭据 |
 | 导入 | import | sing-box/Xray/V2Ray 已知单节点；默认预览 |
-| 版本 | u/update、U/update.sh、reinstall | `sb update sh` 无需版本号，自动更新到最新稳定 Release；core 使用锁定兼容清单，共用旧 Nginx 必须由系统包管理器显式升级 |
+| 版本 | u/update、U/update.sh、reinstall | `sb update sh` 更新最新稳定脚本；`sb update core` 更新官方最新稳定内核，`--check` 只检查字段与配置兼容性；共用旧 Nginx 必须由系统包管理器显式升级 |
 | 删除安装 | un/uninstall | 删除项目服务/命令，保留数据和共用软件 |
-| 透传 | bin；generate/check/format/completion/merge/rule-set/run/tools/geoip/geosite | 由锁定内核决定具体支持情况 |
+| 透传 | bin；generate/check/format/completion/merge/rule-set/run/tools/geoip/geosite | 由已安装内核决定具体支持情况 |
 | Caddy | fix-caddyfile、update caddy、restart caddy | 明确报错并提示替代，不静默改变语义 |
 | 备份 | backup、restore | 排除 Token，恢复后标记续期缺少凭据 |
 
@@ -60,13 +60,21 @@ VLESS 支持 TCP、WS、HTTP/H2、HTTPUpgrade、QUIC 和 TLS/REALITY 参数；Vi
 
 ## 客户端兼容规则
 
-脚本不设置客户端版本上下限，不按客户端版本号拦截连接。安装器锁定的服务端 sing-box 1.14.4 用于验证服务端配置，连接它的客户端不要求使用同一版本。
+脚本不设置客户端版本上下限，不按客户端版本号拦截连接。新安装的服务端基准为已验证的 sing-box 1.14.4，后续通过 `sb update core` 升级官方最新稳定版；连接它的客户端不要求使用同一版本。
 
 客户端需要支持所选协议及参数。例如 REALITY 节点的 Vision flow、Shadowsocks 的 2022 加密方法、TUIC、Hysteria2 和 AnyTLS 都需要相应协议实现。需要兼容更早的客户端时，可选择其已支持的传统 Shadowsocks 加密方式、Trojan 或 VMess AEAD；不支持某个协议的客户端不会因省略版本字段而自动获得该能力。
 
 TLS 版本与客户端软件版本是两回事。脚本不添加客户端版本筛选字段；REALITY 和 QUIC 的 TLS 要求由协议决定，Nginx 使用 TLS 1.2/1.3。这些握手要求不作为客户端应用版本号的上下限。
 
 `gen` 是不落盘、不签发证书的配置预览；缺少现成证书时会输出 `/path/to/certificate`，需提供真实证书后使用。实际安装和应用配置必须使用真实凭据和证书，运行模板不得保留预览占位符。REALITY 不使用自有域名或证书，其节点记录中的空域名/空证书引用属于不适用；直连出口也不需要 `server` 字段。
+
+## 内核更新和新特性
+
+`sb update core`、`sb update core latest` 均选择官方最新稳定版，`sb update core 1.14.4` 可显式选择不低于当前版本的正式版本。预发布版不接受。下载摘要取自官方发布元数据，缺少摘要或获取失败时停止更新。
+
+更新前比较当前与目标版本 `option` Go 源码中的 JSON 字段，显示新增和移除/迁移项目，并保存完整报告及官方发行说明。GitHub 比较接口截断或缺失补丁时，改用官方标签源码比较；两种方式都失败时明确提示不完整。字段在文件之间移动也可能显示为新增/迁移，这不是完整的配置语义或特性识别。
+
+新增可选字段不会自动写入节点。新协议、菜单选项及参数语义需在管理脚本适配后使用；先执行 `sb update sh` 获取脚本更新。候选内核必须同时接受现有运行配置及当前脚本重新生成的配置，校验失败保留旧内核；替换后的启动或健康检查失败则恢复原内核、配置和原服务状态。中断恢复日志在下一次管理命令执行时处理。
 
 ## 导入边界
 

@@ -36,6 +36,7 @@ SNI 预设: apps.mzstatic.com（默认）、xp.apple.com；允许自定义。
   import [文件或目录] [--apply] [--takeover]
   backup [文件] | restore <文件>
   u, update [core|sh|nginx] [版本] | U, update.sh | reinstall | un, uninstall
+  update core [--check]               获取官方最新稳定内核；--check 仅检查兼容性和字段变化
   gen [协议] [...]                    只输出 JSON，无文件或签发操作
   no-auto-tls [HTTP-TLS协议] [...]     使用你自行管理的外部 TLS 代理
   pbk | get-port | ss2022 | ip | bbr | debug [节点]
@@ -77,7 +78,7 @@ main() {
     fi
     [[ -L $SB_ROOT/current ]] || die '尚未初始化，请执行安装器或 sb init'
     if [[ $cmd == cert && ${1:-} == deploy-hook ]]; then cert_deploy_hook; return; fi
-    if [[ -f $SB_ROOT/transaction.json ]]; then with_lock recover_transaction; fi
+    if [[ -f $SB_ROOT/transaction.json || -f $SB_ROOT/core-update.json ]]; then with_lock recover_transaction; fi
     case $cmd in
         '')
             if [[ -t 0 ]]; then ui_main; else help_text; fi;;
@@ -164,7 +165,7 @@ main() {
         u|update)
             if [[ -t 0 && $# == 0 ]]; then ui_update; return; fi
             action=${1:-core}; (( $# == 0 )) || shift
-            case $action in core) update_core "${1:-1.14.4}";; sh) update_script "$@";; nginx) update_nginx "$@";; caddy) die 'Caddy 已移除，请使用 update nginx';; *) die '未知更新对象';; esac;;
+            case $action in core) update_core "$@";; sh) update_script "$@";; nginx) update_nginx "$@";; caddy) die 'Caddy 已移除，请使用 update nginx';; *) die '未知更新对象';; esac;;
         U|update.sh) update_script "$@";;
         reinstall) "$SB_HOME/install.sh" --reinstall;;
         un|uninstall) uninstall_manager;;

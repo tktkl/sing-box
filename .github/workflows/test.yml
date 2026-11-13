@@ -24,6 +24,7 @@ jobs:
       - uses: actions/checkout@v4
       - run: make test-image PLATFORM=linux/amd64
       - run: make test-interactive
+      - run: make test-core-update
       - run: make test-e2e
       - run: make test-systemd
       - run: make test-install

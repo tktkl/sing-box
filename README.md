@@ -193,20 +193,26 @@ REALITY、SS 和原生 TLS/QUIC 节点不需要为此创建 Nginx 配置。
 | 从节点记录修复配置 | `sb fix-all` |
 | 重启 Nginx | `sb restart nginx` |
 | 修复 Nginx 配置 | `sb fix-nginx` |
-| 更新到最新稳定版 | `sb update sh` |
+| 更新管理脚本到最新稳定版 | `sb update sh` |
+| 检查最新内核、字段变化和配置兼容性 | `sb update core --check` |
+| 更新 sing-box 内核到最新稳定版 | `sb update core` |
 | 备份 | `sb backup /root/sb-backup.tar.gz` |
 | 恢复备份 | `sb restore /root/sb-backup.tar.gz` |
 | 卸载脚本和服务 | `sb uninstall` |
 
-更新时无需填写版本号，脚本自动获取最新稳定 Release：
+更新时无需填写版本号：
 
 ```bash
 # root 用户
 sb update sh
+sb update core
 
 # 非 root 用户
 sudo sb update sh
+sudo sb update core
 ```
+
+`sb update core` 从 sing-box 官方获取最新稳定版，校验下载文件，并提示新增和移除的配置字段。也可以先执行 `sb update core --check`，只检查、不更新。字段检测不完整时会明确提示；新字段需管理脚本适配后按需启用，不会自动修改已有节点。配置不兼容会保留旧内核，服务启动失败会恢复旧内核和配置。
 
 备份包含节点凭据和证书，**不包含 Cloudflare Token**；恢复后需重新执行 `sb cert token set primary` 才能自动续期。卸载保留节点、证书和凭据数据。
 

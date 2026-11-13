@@ -50,8 +50,12 @@ core() { [[ -x $SB_CORE ]] || die "找不到 sing-box 内核: $SB_CORE"; "$SB_CO
 check_core_version() {
     local expected actual
     expected=$(jq -r .core_version "$SB_HOME/dependencies.lock.json")
-    actual=$(core version | awk '/^sing-box version /{print $3}')
-    [[ $actual == "$expected" ]] || die "管理配置要求 sing-box $expected，当前是 $actual"
+    actual=$(core_binary_version "$SB_CORE")
+    [[ $actual != "$expected" ]] || return 0
+    if [[ -f $SB_ROOT/core-installed.json ]] &&
+       jq -e --arg version "$actual" --arg hash "$(hash_file "$SB_CORE")" \
+           '.validated==true and .version==$version and .binary_sha256==$hash' "$SB_ROOT/core-installed.json" >/dev/null; then return 0; fi
+    die "当前内核 $actual 尚未经过管理器校验，请执行 sb update core；内置基准版本为 $expected"
 }
 with_lock() (
     local fd

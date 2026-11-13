@@ -24,7 +24,7 @@ done
 docker exec -i "$name" bash -s >.test-output/acme-local.log 2>&1 <<'EOF'
 set -Eeuo pipefail
 export SB_HOME=/workspace SB_ROOT=/state/manager SB_CORE=/usr/local/bin/sb-core SB_SERVICE_MODE=process
-for module in common links render service state certificates nodes maintenance install import ui cli; do source "/workspace/lib/$module.sh"; done
+for module in common links render service state certificates nodes core maintenance install import ui cli; do source "/workspace/lib/$module.sh"; done
 mkdir -p /state/tools "$SB_ROOT/rules"
 tar -xzf /state/pebble.tar.gz -C /state/tools
 tar -xzf /state/pebble-challtestsrv.tar.gz -C /state/tools

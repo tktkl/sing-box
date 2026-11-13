@@ -2,7 +2,7 @@ SHELL := /bin/bash
 IMAGE ?= sb-manager-test:local
 PLATFORM ?= linux/arm64
 
-.PHONY: test test-image test-docker test-interactive test-e2e test-systemd test-install test-bootstrap test-acme-local test-acme-staging assets
+.PHONY: test test-image test-docker test-interactive test-e2e test-core-update test-core-update-live test-systemd test-install test-bootstrap test-acme-local test-acme-staging assets
 assets:
 	bash scripts/prepare-test-assets
 test-image: assets
@@ -12,6 +12,10 @@ test:
 	docker run --rm --init --network none -v "$(CURDIR):/workspace:ro" $(IMAGE) bash tests/bootstrap.sh
 test-interactive:
 	docker run --rm --init --network none -v "$(CURDIR):/workspace:ro" $(IMAGE) python3 tests/interactive.py
+test-core-update:
+	docker run --rm --init --network none -v "$(CURDIR):/workspace:ro" $(IMAGE) bash tests/core-update.sh
+test-core-update-live:
+	docker run --rm --init -v "$(CURDIR):/workspace:ro" $(IMAGE) bash tests/core-update-live.sh
 test-docker:
 	bash tests/docker/matrix.sh
 test-e2e:

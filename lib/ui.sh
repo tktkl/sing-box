@@ -330,7 +330,12 @@ ui_backup() {
 }
 ui_update() {
     local choice
-    choice=$(ui_choose '选择更新对象（共享操作）' sh '管理脚本' core 'sing-box 内核（锁定兼容版本）' nginx 'Nginx')
+    choice=$(ui_choose '选择更新对象（共享操作）' sh '管理脚本' core 'sing-box 内核（官方最新稳定版）' nginx 'Nginx')
+    if [[ $choice == core ]]; then
+        choice=$(ui_choose '内核更新' update '检查字段变化并更新到官方最新稳定版' check '仅检查版本、兼容性及字段变化')
+        if [[ $choice == check ]]; then "$SB_HOME/bin/sb" update core --check; else "$SB_HOME/bin/sb" update core; fi
+        return
+    fi
     "$SB_HOME/bin/sb" update "$choice"
 }
 ui_maintenance() {

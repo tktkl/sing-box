@@ -276,9 +276,15 @@ def main():
     for value, title in titles.items():
         choose(t, "sb-manager 主菜单", value)
         choose(t, title, "0")
+    choose(t, "sb-manager 主菜单", "12")
+    choose(t, "选择更新对象", "2")
+    t.expect("内核更新")
+    t.expect("1) 检查字段变化并更新到官方最新稳定版")
+    t.expect("2) 仅检查版本、兼容性及字段变化")
+    t.expect("请选择序号: ", "0")
     choose(t, "sb-manager 主菜单", "0")
     t.finish()
-    print("PASS website, service, log, backup, update and maintenance menus return cleanly", flush=True)
+    print("PASS website, service, log, backup, numbered core-update options and maintenance menus return cleanly", flush=True)
     print("INTERACTIVE PTY SUITE PASSED", flush=True)
 
 
