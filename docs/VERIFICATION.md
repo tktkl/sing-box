@@ -86,3 +86,19 @@ make test-docker
 日志：`.test-output/20261111/published-release-e2e.log`、`published-release-e2e.exit`（0），附件保留在同目录的 `published-v0.1.0/`。
 
 另已核查提交 `6393b38` 的 [GitHub Actions](https://github.com/tktkl/sing-box/actions/runs/42944161214)：10 组逻辑矩阵全部通过，包含原生 amd64 上的 Ubuntu 26.04；本机模拟环境失败记录仍保留。该次远程 integration 在 `make test-systemd` 失败，因此不能将整个 CI 标为通过。发布工作流、逻辑矩阵与本机 systemd 实测是分别记录的证据。
+
+## v0.1.1 交互与安装验收（2026-11-13）
+
+安装默认改为不创建节点；只有显式 `--with-node` 才进入初始 REALITY 创建。真实 systemd 安装器测试没有传 `--no-node`，确认安装后节点数量为零且核心未启动；首次添加、修改、崩溃恢复、重装保留节点及升级失败回退均通过。
+
+新增 `make test-interactive`，用真实 PTY（保留终端回显）驱动 Bash 菜单，验证：
+
+- 主菜单循环、22 项协议编号及映射、两个 REALITY SNI 预设、非法序号重试和 `0` 取消。
+- 同协议多节点、密码隐藏输入、按协议筛选修改项、名称和地址修改、端口冲突不变更、独立出口及恢复直连。
+- 切换协议保留 ID/端口且另一节点记录不变；自签证书须显式选择，网站菜单仅提供可反代的 HTTP TLS 节点。
+- Cloudflare Token 隐藏输入和 0600 凭据权限、DNS 选择、删除确认、节点选择取消，以及操作失败后返回主菜单。
+- 网站、服务、日志、备份、更新及维护子菜单能取消返回；不需要输入协议别名或修改字段名。
+
+原有逻辑测试、全部 22 种入口真实内核检查、54 项真实通信、路由拒绝和 SIGKILL 事务恢复回归通过。发布引导按 `VERSION` 校验同版安装包，损坏包及链接成员拒绝执行。没有开展真实 Cloudflare DNS-01 验收，既有外部验证边界继续适用。
+
+本轮日志保存于 `.test-output/20261113/`，包括 `unit.log`、`interactive-final.log`、`install.log`、`e2e-driver.log`、`static-release.log` 及对应退出码。

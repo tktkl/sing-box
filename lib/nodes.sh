@@ -167,8 +167,18 @@ change_node() {
     local selector=${1:-} option=${2:-} node old value
     (( $# < 1 )) || shift; (( $# < 1 )) || shift
     old=$(select_node "$selector"); node=$old
-    if [[ -z $option && -t 0 ]]; then read -r -p '修改项 (port/new/outbound/id/passwd/sni/path/host/method/key/full/web): ' option; fi
     case $option in
+        name)
+            value=${1:-}; no_controls "$value" && (( ${#value} <= 100 )) || die '节点名称无效'
+            node=$(json_set "$old" name "$value");;
+        address)
+            value=${1:-}; valid_host "$value" || die '无效连接地址'
+            endpoint_check "$value" "$(jq -r .protocol <<< "$old")" "$(jq -r .port <<< "$old")"
+            node=$(json_set "$old" address "$value");;
+        username)
+            [[ $(jq -r .protocol <<< "$old") == socks ]] || die '此节点没有 Socks 用户名'
+            value=${1:-}; [[ -n $value ]] && no_controls "$value" || die '用户名无效'
+            node=$(json_set "$old" username "$value");;
         new) (( $# > 0 )) || die 'new 需要指定新协议'; node=$(build_node "$1" "$old" false "${@:2}");;
         full) node=$(build_node "$(jq -r .protocol <<< "$old")" "$old" false "$@");;
         outbound)

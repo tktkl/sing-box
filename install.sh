@@ -11,7 +11,7 @@ bootstrap_install() (
     done
     # Standalone installers are versioned with their release and always load
     # the matching complete package, never mutable main-branch modules.
-    release_version=0.1.0
+    release_version=0.1.1
     archive="sb-manager-$release_version.tar.gz"
     release_base="https://github.com/tktkl/sing-box/releases/download/v$release_version"
     temporary=$(mktemp -d)
@@ -42,17 +42,18 @@ SB_HOME=''
 if [[ -n ${BASH_SOURCE[0]:-} ]]; then SB_HOME=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P); fi
 if [[ -z $SB_HOME || ! -f $SB_HOME/lib/common.sh ]]; then bootstrap_install "$@"; exit; fi
 source "$SB_HOME/lib/common.sh"
-for module in links render service state certificates nodes maintenance install import cli; do source "$SB_HOME/lib/$module.sh"; done
+for module in links render service state certificates nodes maintenance install import ui cli; do source "$SB_HOME/lib/$module.sh"; done
 require_root
-address='' no_node=false version=1.14.4
+address='' no_node=true version=1.14.4
 while (( $# )); do
     case $1 in
         --address) address=${2:?}; shift 2;;
         --no-node) no_node=true; shift;;
+        --with-node) no_node=false; shift;;
         --reinstall) no_node=true; shift;;
         -v|--core-version) version=${2:?}; shift 2;;
         -l) shift;;
-        -h|--help) printf 'install.sh [--address IP] [--no-node] [--reinstall] [-v 1.14.4]\n'; exit 0;;
+        -h|--help) printf 'install.sh [--address IP] [--with-node|--no-node] [--reinstall] [-v 1.14.4]\n默认仅安装；--with-node 显式创建一个 REALITY 节点。\n'; exit 0;;
         *) die '未知安装参数';;
     esac
 done
@@ -108,4 +109,4 @@ systemctl enable sb-manager.service sb-manager-renew.timer
 systemctl start sb-manager-renew.timer
 if [[ -n $previous_script ]]; then /usr/local/bin/sb fix-all; fi
 if [[ $no_node == false ]]; then /usr/local/bin/sb add reality ${address:+--address "$address"}; fi
-note '安装完成，使用 sb help 查看命令；未关闭防火墙'
+note '安装完成，输入 sb 打开菜单，再选择「添加节点」；未关闭防火墙'

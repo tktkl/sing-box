@@ -9,6 +9,7 @@ git clone https://github.com/tktkl/sing-box.git
 cd sing-box
 make test-image
 make test
+make test-interactive
 make test-e2e
 make test-systemd
 make test-install
@@ -20,6 +21,8 @@ make test-docker
 测试镜像、内核、Nginx、规则集和 ACME 工具锁定校验值。测试使用隔离网络、临时文件和测试证书，不挂载宿主真实配置。systemd 验收使用特权隔离容器；BBR 在容器中拒绝修改共享内核参数。
 
 `test-install` 调用公开安装器并验证服务、升级和卸载；`test-bootstrap` 验证单文件入口从正式 Release 下载完整安装包。网络受限时可使用 `SB_TEST_OFFLINE=1 make test-install`，将锁定内核放入容器的正常下载缓存；此模式不计为外部下载路径验收通过。
+
+`test-interactive` 使用真实 PTY 驱动 Bash，验证编号菜单、输入隐藏、取消、协议切换、节点独立和错误返回主菜单。安装验收另外检查默认安装后节点数量为零。
 
 `test-acme-local` 使用本地 ACME 服务和一小时有效期证书，调用正式 `sb cert renew`，验证钩子和实际部署。真实 Cloudflare staging 验收单独执行，需要测试域名和通过隐藏输入配置的 Token；本地模拟 DNS 不替代真实 Cloudflare 验收。
 

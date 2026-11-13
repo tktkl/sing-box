@@ -5,7 +5,7 @@ sb-manager — 一个 sing-box 进程，各节点独立入口和出口
 
 用法: sb <命令> [参数]       sing-box <命令> [参数]
 
-  a, add [协议] [位置参数|auto] [选项]  添加一个新节点（默认 REALITY）
+  a, add [协议] [位置参数|auto] [选项]  交互时按序号选协议；非交互默认 REALITY
   c, change [节点] [修改项] [...]      修改一个节点
   d, del [节点]                       删除一个节点
   dd, ddel [节点...]                  删除多个唯一匹配节点
@@ -13,7 +13,7 @@ sb-manager — 一个 sing-box 进程，各节点独立入口和出口
   list                                全部节点摘要
   url, qr [节点]                      分享链接 / 二维码（包含凭据）
   outbound [节点] [链接|direct]        独立出口；省略链接可从标准输入粘贴
-  full/id/host/port/path/passwd/key/method/sni/new/web [节点] [...]
+  full/id/host/port/path/passwd/key/method/sni/new/web/name/address/username [节点] [...]
 
 协议: r/reality, rh2, ss, tcp/http/quic/ws, wss/h2/hu,
       vws/vh2/vhu, tws/th2/thu, trojan, hy/hy2, tuic, anytls, socks, door
@@ -83,30 +83,29 @@ main() {
     if [[ -f $SB_ROOT/transaction.json ]]; then with_lock recover_transaction; fi
     case $cmd in
         '')
-            if [[ -t 0 ]]; then
-                printf '1) 添加节点  2) 修改节点  3) 查看节点  4) 删除节点  5) 状态\n' >&2
-                read -r -p '选择，回车退出: ' action
-                case $action in
-                    1) read -r -p '协议（默认 reality）: ' value; add_node "${value:-reality}";;
-                    2) change_node;; 3) select_node | redact_json;;
-                    4) node=$(select_node); delete_nodes "$(jq '[.id]' <<< "$node")";;
-                    5) status_report;; '') return;; *) die '无效菜单项';;
-                esac
-            else help_text; fi;;
-        a|add) add_node "$@";;
-        c|change) change_node "$@";;
-        full|id|host|port|path|passwd|key|method|sni|new|outbound)
+            if [[ -t 0 ]]; then ui_main; else help_text; fi;;
+        __ui) [[ -t 0 ]] || die '菜单操作需要交互终端'; ui_dispatch "$@";;
+        a|add)
+            if [[ -t 0 && $# -le 1 ]]; then ui_add "$@"; else add_node "$@"; fi;;
+        c|change)
+            if [[ -t 0 && $# -le 2 ]]; then ui_change "$@"; else change_node "$@"; fi;;
+        full|id|host|port|path|passwd|key|method|sni|new|outbound|name|address|username)
             selector=${1:-}; (( $# == 0 )) || shift
-            change_node "$selector" "$cmd" "$@";;
+            if [[ -t 0 && $# == 0 ]]; then ui_change "$selector" "$cmd"
+            else change_node "$selector" "$cmd" "$@"; fi;;
         web)
-            if [[ ${1:-} == --domain ]]; then
+            if [[ -t 0 && $# == 0 ]]; then ui_web
+            elif [[ -t 0 && $# == 1 ]]; then ui_change "$1" web
+            elif [[ ${1:-} == --domain ]]; then
                 domain=${2:-}; shift 2; value=''; profile=default; local port=443 remove=false
                 if (( $# )) && [[ $1 != --* ]]; then value=$1; shift; fi
                 while (( $# )); do case $1 in --port) port=${2:?}; shift 2;; --profile) profile=${2:?}; shift 2;; --delete) remove=true; shift;; *) die '未知网站选项';; esac; done
                 if [[ $remove == true ]]; then valid_domain "$domain" || die '域名无效'; with_lock _website_delete "$domain"
                 else website_set "$domain" "$value" "$port" "$profile"; fi
             else selector=${1:-}; (( $# == 0 )) || shift; change_node "$selector" web "$@"; fi;;
-        d|del) node=$(select_node "${1:-}"); delete_nodes "$(jq '[.id]' <<< "$node")";;
+        d|del)
+            if [[ -t 0 ]]; then ui_delete "${1:-}"
+            else node=$(select_node "${1:-}"); delete_nodes "$(jq '[.id]' <<< "$node")"; fi;;
         dd|ddel)
             ids='[]'
             for selector in "$@"; do node=$(SB_REQUIRE_UNIQUE=1 select_node "$selector"); ids=$(jq --arg id "$(jq -r .id <<< "$node")" '.+[$id]|unique' <<< "$ids"); done
@@ -120,6 +119,7 @@ main() {
             if [[ $cmd == qr ]]; then need qrencode; qrencode -t ANSIUTF8 "$value"; else printf '%s\n' "$value"; fi;;
         no-auto-tls) add_node "${1:-wss}" "${@:2}" --no-auto-tls;;
         cert)
+            if [[ -t 0 && $# == 0 ]]; then ui_cert; return; fi
             action=${1:-list}; (( $# == 0 )) || shift
             case $action in
                 token) [[ ${1:-} == set && -n ${2:-} ]] || die 'cert token set <名称>'; cert_token_set "$2";;
@@ -136,7 +136,7 @@ main() {
                 list|check) cert_check "${1:-}";; renew) cert_renew "${1:-}";;
                 *) die '未知证书命令';;
             esac;;
-        dns) if (( $# )); then set_dns "$@"; else read_state | jq .settings.dns; fi;;
+        dns) if (( $# )); then set_dns "$@"; elif [[ -t 0 ]]; then ui_dns; else read_state | jq .settings.dns; fi;;
         log)
             case ${1:-} in
                 '') touch "$SB_ROOT/logs/core.log"; tail -n 100 -F "$SB_ROOT/logs/core.log";;
@@ -165,6 +165,7 @@ main() {
         import) import_command "$@";;
         bbr) bbr_enable;;
         u|update)
+            if [[ -t 0 && $# == 0 ]]; then ui_update; return; fi
             action=${1:-core}; (( $# == 0 )) || shift
             case $action in core) update_core "${1:-1.14.4}";; sh) update_script "$@";; nginx) update_nginx "$@";; caddy) die 'Caddy 已移除，请使用 update nginx';; *) die '未知更新对象';; esac;;
         U|update.sh) update_script "$@";;

@@ -6,8 +6,8 @@
 
 | 功能 | 参数或别名 | 行为 |
 |---|---|---|
-| 添加 | a/add | 一次创建一个独立节点；默认 REALITY |
-| 修改 | c/change；full/id/host/port/path/passwd/key/method/sni/new/web | 永久 ID 不变；仅修改选中节点 |
+| 添加 | a/add | 交互终端按序号选协议；非交互无参数默认 REALITY |
+| 修改 | c/change；full/id/host/port/path/passwd/key/method/sni/new/web/name/address/username | 永久 ID 不变；交互菜单只显示该协议可修改的字段 |
 | 出口 | outbound；change NODE outbound | 每节点独立副本；省略链接从标准输入读取 |
 | 查看 | i/info、list、url、qr | info/debug 脱敏，url/qr 显式显示分享凭据 |
 | 删除 | d/del、dd/ddel | 单节点或多个唯一选择；不撤销共享证书 |
@@ -22,6 +22,8 @@
 | 透传 | bin；generate/check/format/completion/merge/rule-set/run/tools/geoip/geosite | 由锁定内核决定具体支持情况 |
 | Caddy | fix-caddyfile、update caddy、restart caddy | 明确报错并提示替代，不静默改变语义 |
 | 备份 | backup、restore | 排除 Token，恢复后标记续期缺少凭据 |
+
+安装默认不创建节点，`--no-node` 继续兼容；仅 `--with-node` 显式创建初始 REALITY 节点。`sb` 打开循环菜单，`0` 返回，删除节点须确认。已有命令的位置参数和非交互行为保留，适合脚本调用。
 
 `auto` 显式重新生成对应值；修改时未给出的字段沿用现有值。为避免凭据变动，常规改端口请用 `port` 而非 `full ... auto`。
 

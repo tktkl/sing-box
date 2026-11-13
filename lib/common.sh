@@ -101,12 +101,18 @@ select_node() {
         (.port|tostring)==$q or (([.name,.protocol,.domain,.id]|join(" ")|ascii_downcase)|contains($q)))]')
     count=$(jq length <<< "$matches")
     (( count > 0 )) || die '没有匹配的节点'
-    if (( count == 1 )); then jq -c '.[0]' <<< "$matches"; return; fi
+    if (( count == 1 )) && [[ -n $query || ! -t 0 || ${SB_REQUIRE_UNIQUE:-0} == 1 ]]; then jq -c '.[0]' <<< "$matches"; return; fi
     [[ -t 0 && ${SB_REQUIRE_UNIQUE:-0} != 1 ]] || die '匹配多个节点，请使用永久 ID 或唯一端口'
     jq -r 'to_entries[]|"\(.key+1)) \(.value.id) \(.value.protocol) :\(.value.port) \(.value.name)"' <<< "$matches" >&2
-    read -r -p '选择节点: ' choice
-    [[ $choice =~ ^[0-9]+$ ]] && (( choice >= 1 && choice <= count )) || die '无效选择'
-    jq -c --argjson i "$((choice-1))" '.[$i]' <<< "$matches"
+    while true; do
+        printf '0) 返回 / 取消\n' >&2
+        read -r -p '选择节点序号: ' choice || return 2
+        [[ $choice != 0 ]] || return 2
+        if [[ $choice =~ ^[0-9]{1,6}$ ]] && (( 10#$choice >= 1 && 10#$choice <= count )); then
+            jq -c --argjson i "$((10#$choice-1))" '.[$i]' <<< "$matches"; return
+        fi
+        note '序号无效，请重新选择'
+    done
 }
 port_is_listening() {
     local port=$1

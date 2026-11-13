@@ -6,7 +6,7 @@ if (( BASH_VERSINFO[0] < 5 )); then
 fi
 SB_HOME=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)
 export SB_HOME
-for module in common links render service state certificates nodes maintenance install import cli; do
+for module in common links render service state certificates nodes maintenance install import ui cli; do
     # All sourced files belong to the installed, root-owned release.
     source "$SB_HOME/lib/$module.sh"
 done

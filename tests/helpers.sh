@@ -3,7 +3,7 @@ set -Eeuo pipefail
 export SB_HOME=${SB_HOME:-$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)}
 export SB_CORE=${SB_CORE:-/usr/local/bin/sb-core}
 export SB_SERVICE_MODE=none
-for module in common links render service state certificates nodes maintenance install import cli; do source "$SB_HOME/lib/$module.sh"; done
+for module in common links render service state certificates nodes maintenance install import ui cli; do source "$SB_HOME/lib/$module.sh"; done
 CLI="$SB_HOME/bin/sb"
 fresh_root() {
     export SB_ROOT

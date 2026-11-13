@@ -21,10 +21,10 @@ for ((i=0;i<60;i++)); do
 done
 if (( i==60 )); then docker logs "$name" >.test-output/systemd-unavailable.log 2>&1; printf 'Real systemd unavailable; Linux VM acceptance required.\n' >&2; exit 1; fi
 docker exec "$name" findmnt -n -o FSTYPE,OPTIONS /proc/sys/fs/binfmt_misc | grep -q '^tmpfs.*\bro\b'
-docker exec -i -e SB_TEST_INSTALLER="${SB_TEST_INSTALLER:-0}" -e SB_TEST_OFFLINE="${SB_TEST_OFFLINE:-0}" -e SB_TEST_BOOTSTRAP="${SB_TEST_BOOTSTRAP:-0}" -e SB_TEST_RELEASE="${SB_TEST_RELEASE:-}" "$name" bash -s >.test-output/systemd.log 2>&1 <<'EOF'
+docker exec -i -e SB_TEST_INSTALLER="${SB_TEST_INSTALLER:-0}" -e SB_TEST_OFFLINE="${SB_TEST_OFFLINE:-0}" -e SB_TEST_BOOTSTRAP="${SB_TEST_BOOTSTRAP:-0}" -e SB_TEST_RELEASE="${SB_TEST_RELEASE:-}" -e SB_TEST_FROM_RELEASE="${SB_TEST_FROM_RELEASE:-}" "$name" bash -s >.test-output/systemd.log 2>&1 <<'EOF'
 set -Eeuo pipefail
 export SB_HOME=/workspace SB_ROOT=/etc/sb-manager SB_CORE=/usr/local/lib/sb-manager/core/sing-box SB_SERVICE_MODE=systemd
-for module in common links render service state certificates nodes maintenance install import cli; do source "/workspace/lib/$module.sh"; done
+for module in common links render service state certificates nodes maintenance install import ui cli; do source "/workspace/lib/$module.sh"; done
 mkdir -p /usr/local/lib/sb-manager/core "$SB_ROOT/rules"
 cp /opt/test-assets/geoip-cn.srs "$SB_ROOT/rules/geoip-cn.srs"
 if [[ $SB_TEST_INSTALLER == 1 ]]; then
@@ -35,13 +35,19 @@ if [[ $SB_TEST_INSTALLER == 1 ]]; then
     fi
     # Exercise the public installer. Offline mode supplies the exact pinned tarball
     # to its normal verified cache, without replacing any installer commands.
-    if [[ $SB_TEST_BOOTSTRAP == 1 ]]; then
+    if [[ -n $SB_TEST_FROM_RELEASE ]]; then
+        [[ $SB_TEST_FROM_RELEASE =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
+        mkdir /opt/old-release-installer
+        curl --fail --location --silent --show-error --retry 3 --retry-all-errors --max-time 180 \
+            "https://github.com/tktkl/sing-box/releases/download/v$SB_TEST_FROM_RELEASE/install.sh" -o /opt/old-release-installer/install.sh
+        bash /opt/old-release-installer/install.sh --address 127.0.0.1 --no-node
+    elif [[ $SB_TEST_BOOTSTRAP == 1 ]]; then
         mkdir /opt/standalone-installer
         cp /workspace/install.sh /opt/standalone-installer/install.sh
         [[ ! -e /opt/standalone-installer/lib ]]
-        bash /opt/standalone-installer/install.sh --address 127.0.0.1 --no-node
+        bash /opt/standalone-installer/install.sh --address 127.0.0.1
         printf 'STANDALONE RELEASE BOOTSTRAP PASSED\n'
-    else bash /workspace/install.sh --address 127.0.0.1 --no-node; fi
+    else bash /workspace/install.sh --address 127.0.0.1; fi
 else
     install -m755 /usr/local/bin/sb-core "$SB_CORE"
     install_release /workspace
@@ -51,12 +57,16 @@ else
     systemctl daemon-reload
     systemctl enable --now sb-manager-renew.timer
 fi
+[[ $(/usr/local/bin/sb list | jq length) == 0 ]]
+! systemctl is-active --quiet sb-manager.service
+printf 'DEFAULT INSTALLATION CREATES NO NODE PASSED\n'
 node=$(/usr/local/bin/sb add ss 29001 auto aes-256-gcm)
 id=$(jq -r .id <<< "$node")
 if [[ -n $SB_TEST_RELEASE ]]; then
     cp "$SB_ROOT/current/nodes/$id.json" /tmp/before-release-upgrade.json
     /usr/local/bin/sb update sh "$SB_TEST_RELEASE"
     cmp /tmp/before-release-upgrade.json "$SB_ROOT/current/nodes/$id.json"
+    [[ $(/usr/local/bin/sb list | jq length) == 1 ]]
     systemctl is-active --quiet sb-manager.service
     printf 'PUBLISHED RELEASE DOWNLOAD AND SCRIPT UPGRADE PASSED\n'
 fi
