@@ -114,3 +114,7 @@ make test-docker
 逻辑测试对 SS、REALITY 及独立出口的节点信息和诊断输出与保存记录进行完整 JSON 等值比较；三套导入预览保留原 UUID。真实 PTY 测试确认快捷命令和编号菜单详情均显示保存的密码原值，其他菜单回归通过。安装、重装、节点保留和失败回退的真实 systemd 测试通过，静态检查和发布包引导校验通过。
 
 证据位于 `.test-output/20261113/unredacted/` 的 `unit.log`、`interactive.log`、`install.log`、`static.log` 及对应退出码。
+
+[v0.1.2 发布工作流](https://github.com/tktkl/sing-box/actions/runs/43376207173) 成功。四个公开附件的下载及 SHA-256 校验通过；公开包的逻辑和真实 PTY 测试通过，节点详情显示与保存记录一致的实际凭据。从公开 v0.1.1 升级至 v0.1.2 后，节点记录保持一致，完整 systemd 验收通过。逻辑测试对公开包复用仓库的 ShellCheck 配置，该开发配置不属于运行组件。
+
+对应日志为 `published-unit.log`、`published-interactive.log`、`published-upgrade.log`，退出码均为 0。
