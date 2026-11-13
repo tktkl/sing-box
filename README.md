@@ -193,10 +193,20 @@ REALITY、SS 和原生 TLS/QUIC 节点不需要为此创建 Nginx 配置。
 | 从节点记录修复配置 | `sb fix-all` |
 | 重启 Nginx | `sb restart nginx` |
 | 修复 Nginx 配置 | `sb fix-nginx` |
-| 更新管理脚本 | `sb update sh` |
+| 更新到最新稳定版 | `sb update sh` |
 | 备份 | `sb backup /root/sb-backup.tar.gz` |
 | 恢复备份 | `sb restore /root/sb-backup.tar.gz` |
 | 卸载脚本和服务 | `sb uninstall` |
+
+更新时无需填写版本号，脚本自动获取最新稳定 Release：
+
+```bash
+# root 用户
+sb update sh
+
+# 非 root 用户
+sudo sb update sh
+```
 
 备份包含节点凭据和证书，**不包含 Cloudflare Token**；恢复后需重新执行 `sb cert token set primary` 才能自动续期。卸载保留节点、证书和凭据数据。
 

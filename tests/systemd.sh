@@ -64,7 +64,8 @@ node=$(/usr/local/bin/sb add ss 29001 auto aes-256-gcm)
 id=$(jq -r .id <<< "$node")
 if [[ -n $SB_TEST_RELEASE ]]; then
     cp "$SB_ROOT/current/nodes/$id.json" /tmp/before-release-upgrade.json
-    /usr/local/bin/sb update sh "$SB_TEST_RELEASE"
+    if [[ $SB_TEST_RELEASE == latest ]]; then /usr/local/bin/sb update sh
+    else /usr/local/bin/sb update sh "$SB_TEST_RELEASE"; fi
     cmp /tmp/before-release-upgrade.json "$SB_ROOT/current/nodes/$id.json"
     [[ $(/usr/local/bin/sb list | jq length) == 1 ]]
     systemctl is-active --quiet sb-manager.service

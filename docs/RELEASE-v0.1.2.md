@@ -8,8 +8,8 @@
 - 无需额外开关，升级后即可使用。
 
 ```bash
-sudo sb update sh 0.1.2
+sudo sb update sh
 sudo sb
 ```
 
-root 用户省略 `sudo`。升级保留已有节点和运行凭据。
+root 用户省略 `sudo`。不带版本号会更新到最新稳定 Release；升级保留已有节点和运行凭据。

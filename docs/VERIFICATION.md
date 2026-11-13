@@ -118,3 +118,5 @@ make test-docker
 [v0.1.2 发布工作流](https://github.com/tktkl/sing-box/actions/runs/43376207173) 成功。四个公开附件的下载及 SHA-256 校验通过；公开包的逻辑和真实 PTY 测试通过，节点详情显示与保存记录一致的实际凭据。从公开 v0.1.1 升级至 v0.1.2 后，节点记录保持一致，完整 systemd 验收通过。逻辑测试对公开包复用仓库的 ShellCheck 配置，该开发配置不属于运行组件。
 
 对应日志为 `published-unit.log`、`published-interactive.log`、`published-upgrade.log`，退出码均为 0。
+
+2026-11-13，另外从公开 v0.1.1 安装后执行无版本号的 `sb update sh`，自动获取最新稳定 Release 并升级至 v0.1.2。节点记录、凭据及节点数量保持一致，后续真实 systemd 安装升级回退验收通过。证据为 `.test-output/20261113/latest-update/systemd.log` 和 `exit`（0）。

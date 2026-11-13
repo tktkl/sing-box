@@ -17,7 +17,7 @@
 | 服务 | s/status、start/stop/restart、t/test | nginx 参数管理现有 Nginx 服务 |
 | 修复 | fix、fix-all、fix-config.json、fix-nginx | 从节点记录重建；不更换凭据 |
 | 导入 | import | sing-box/Xray/V2Ray 已知单节点；默认预览 |
-| 版本 | u/update、U/update.sh、reinstall | 有锁定兼容清单的 core，版本化脚本发布；共用旧 Nginx 必须由系统包管理器显式升级 |
+| 版本 | u/update、U/update.sh、reinstall | `sb update sh` 无需版本号，自动更新到最新稳定 Release；core 使用锁定兼容清单，共用旧 Nginx 必须由系统包管理器显式升级 |
 | 删除安装 | un/uninstall | 删除项目服务/命令，保留数据和共用软件 |
 | 透传 | bin；generate/check/format/completion/merge/rule-set/run/tools/geoip/geosite | 由锁定内核决定具体支持情况 |
 | Caddy | fix-caddyfile、update caddy、restart caddy | 明确报错并提示替代，不静默改变语义 |
