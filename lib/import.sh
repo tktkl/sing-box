@@ -73,7 +73,7 @@ import_command() (
     elif [[ -f $source ]]; then files+=("$source"); else die '导入源不存在'; fi
     (( ${#files[@]} )) || die '未找到 JSON 配置'
     for file in "${files[@]}"; do item=$(import_preview_file "$file"); plan=$(jq --argjson i "$item" '.+[$i]' <<< "$plan"); done
-    if [[ $apply == false ]]; then printf '%s\n' "$plan" | redact_json; return; fi
+    if [[ $apply == false ]]; then printf '%s\n' "$plan" | jq .; return; fi
     while IFS= read -r item; do
         node=$(jq .node <<< "$item")
         if [[ $(jq -r '.certificate!=null' <<< "$item") == true ]]; then

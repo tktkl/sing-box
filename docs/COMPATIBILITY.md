@@ -9,7 +9,7 @@
 | 添加 | a/add | 交互终端按序号选协议；非交互无参数默认 REALITY |
 | 修改 | c/change；full/id/host/port/path/passwd/key/method/sni/new/web/name/address/username | 永久 ID 不变；交互菜单只显示该协议可修改的字段 |
 | 出口 | outbound；change NODE outbound | 每节点独立副本；省略链接从标准输入读取 |
-| 查看 | i/info、list、url、qr | info/debug 脱敏，url/qr 显式显示分享凭据 |
+| 查看 | i/info、list、url、qr、debug | info/debug、菜单节点详情及导入预览显示真实字段；list 保持节点摘要 |
 | 删除 | d/del、dd/ddel | 单节点或多个唯一选择；不撤销共享证书 |
 | 基础 | v/version、ip、pbk、get-port、ss2022、h/help | 保留快捷方式 |
 | 生成 | gen、no-auto-tls | gen 不落盘或签发；no-auto-tls 后端只监听回环 |

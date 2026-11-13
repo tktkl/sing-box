@@ -88,8 +88,16 @@ assert_jq "$ipv6" '.server=="2001:db8::1" and .password=="pa:ss@word" and .tls.i
 pass 'malformed URIs, command injection, IPv6 and escaped credentials'
 
 debug=$("$CLI" debug)
-secret=$(read_state | jq -r '.nodes[0].password')
-[[ $debug != *"$secret"* ]]
+expected=$(read_state)
+jq -se --argjson expected "$expected" '.[1]==$expected' <<< "$debug" >/dev/null
+for node_id in "$id1" "$id2"; do
+    expected=$(select_node "$node_id")
+    info=$("$CLI" info "$node_id")
+    jq -e --argjson expected "$expected" '.==$expected' <<< "$info" >/dev/null
+    debug=$("$CLI" debug "$node_id")
+    jq -se --argjson expected "$expected" '.[1]==$expected' <<< "$debug" >/dev/null
+done
+pass 'info and debug preserve all node, REALITY and outbound credential values'
 printf '%s\n' 'test_TOKEN_012345678901234567890' | "$CLI" cert token set test
 backup="$SB_ROOT/run/backup.tar.gz"
 "$CLI" backup "$backup" >/dev/null
@@ -102,7 +110,7 @@ nodecount=$(read_state | jq '.nodes|length')
 "$CLI" del "$id1"
 "$CLI" restore "$backup"
 assert_jq "$(read_state)" ".nodes|length==$nodecount"
-pass 'redacted diagnostics and token-free, permission-restricted backup/restore'
+pass 'token-free, permission-restricted backup/restore'
 
 mkdir "$SB_ROOT/run/attack"
 ln -s /etc/passwd "$SB_ROOT/run/attack/escape"
@@ -129,7 +137,8 @@ for type in sing-box xray v2ray; do
     else
         jq -n '{inbounds:[{protocol:"vmess",port:27001,settings:{clients:[{id:"11111111-1111-4111-8111-111111111111"}]},streamSettings:{network:"tcp",security:"none"}}],outbounds:[{protocol:"freedom"}]}' > "$SB_ROOT/run/import.json"
     fi
-    "$CLI" import "$SB_ROOT/run/import.json" >/dev/null
+    preview=$("$CLI" import "$SB_ROOT/run/import.json")
+    assert_jq "$preview" '.[0].node.uuid=="11111111-1111-4111-8111-111111111111"'
 done
 "$CLI" import "$SB_ROOT/run/import.json" --apply
 assert_jq "$(read_state)" 'any(.nodes[];.port==27001 and .protocol=="vmess-tcp")'

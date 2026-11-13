@@ -5,6 +5,7 @@ import json
 import os
 import pathlib
 import pty
+import re
 import select
 import shutil
 import subprocess
@@ -76,7 +77,7 @@ class Terminal:
         self.read()
         os.close(self.master)
         assert self.process.returncode == code, self.output.decode(errors="replace")
-        return self.output.decode(errors="replace")
+        return re.sub(r"\x1b\[[0-?]*[ -/]*[@-~]", "", self.output.decode(errors="replace"))
 
 
 def choose(t, title, value):
@@ -133,6 +134,9 @@ def main():
     assert "secret-ui-password" not in output
     assert len(nodes()) == 1 and nodes()[0]["password"] == "secret-ui-password"
     first = nodes()[0]["id"]
+    t = Terminal("info", first)
+    info = json.loads(t.finish())
+    assert info == nodes()[0] and info["password"] == "secret-ui-password"
     t = Terminal("add", "ss")
     input_base(t, "28102", "ui-sibling")
     choose(t, "选择 Shadowsocks 加密方式", "5")
@@ -142,6 +146,16 @@ def main():
     sibling = next(n["id"] for n in nodes() if n["id"] != first)
     stable = (ROOT / "current/nodes" / (sibling + ".json")).read_bytes()
     print("PASS add wizard, protocol shortcut, same-protocol independent nodes and hidden password", flush=True)
+
+    t = Terminal()
+    choose(t, "sb-manager 主菜单", "3")
+    t.expect("选择节点序号: ", str(next(i for i, n in enumerate(nodes(), 1) if n["id"] == first)))
+    choose(t, "查看节点", "1")
+    t.expect("secret-ui-password")
+    choose(t, "sb-manager 主菜单", "0")
+    output = t.finish()
+    assert "[REDACTED]" not in output
+    print("PASS command and numbered information views show exact credential values", flush=True)
 
     t = Terminal("change", first)
     t.expect("选择修改项")

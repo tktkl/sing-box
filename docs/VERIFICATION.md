@@ -106,3 +106,11 @@ make test-docker
 [v0.1.1 发布工作流](https://github.com/tktkl/sing-box/actions/runs/43353773723) 成功，公开附件已下载并通过 SHA-256 校验。针对公开包再次运行真实 PTY 菜单测试通过；单文件安装入口在没有 `--no-node` 的情况下安装后节点为零，从公开 v0.1.0 升级至 v0.1.1 后节点数量、凭据和记录保持一致，随后完整 systemd 验收通过。本地 ACME 的正式续期及部署回归通过。
 
 公开包证据：`published-interactive.log`、`published-bootstrap.log`、`upgrade-0.1.0.log`、`acme.log`，对应退出码均为 0；附件位于 `published-v0.1.1/`。
+
+## v0.1.2 真实字段显示验收（2026-11-13）
+
+按用户要求移除管理命令的自动脱敏。`sb info`、`sb debug`（全局及单节点）、菜单节点详情和导入预览显示实际字段值。节点摘要和状态仍作为摘要输出，不使用替换标记。
+
+逻辑测试对 SS、REALITY 及独立出口的节点信息和诊断输出与保存记录进行完整 JSON 等值比较；三套导入预览保留原 UUID。真实 PTY 测试确认快捷命令和编号菜单详情均显示保存的密码原值，其他菜单回归通过。安装、重装、节点保留和失败回退的真实 systemd 测试通过，静态检查和发布包引导校验通过。
+
+证据位于 `.test-output/20261113/unredacted/` 的 `unit.log`、`interactive.log`、`install.log`、`static.log` 及对应退出码。

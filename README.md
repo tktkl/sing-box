@@ -68,10 +68,12 @@ sb url NODE
 | 打开菜单 | `sb` |
 | 查看帮助 | `sb help` |
 | 查看所有节点 | `sb list` |
-| 查看一个节点 | `sb info NODE` |
+| 查看完整节点信息和真实凭据 | `sb info NODE` |
 | 获取分享链接 | `sb url NODE` |
 | 显示分享二维码 | `sb qr NODE` |
 | 查看脚本和内核版本 | `sb version` |
+
+菜单中的「完整节点信息」、`sb info`、`sb debug` 和导入预览均显示真实字段值，包括 UUID、密码、REALITY 密钥及出口参数，不自动替换为脱敏标记。
 
 ## 添加节点
 

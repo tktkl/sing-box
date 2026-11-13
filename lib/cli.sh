@@ -9,7 +9,7 @@ sb-manager — 一个 sing-box 进程，各节点独立入口和出口
   c, change [节点] [修改项] [...]      修改一个节点
   d, del [节点]                       删除一个节点
   dd, ddel [节点...]                  删除多个唯一匹配节点
-  i, info [节点]                      节点信息（凭据脱敏）
+  i, info [节点]                      完整节点信息（包含真实凭据）
   list                                全部节点摘要
   url, qr [节点]                      分享链接 / 二维码（包含凭据）
   outbound [节点] [链接|direct]        独立出口；省略链接可从标准输入粘贴
@@ -45,9 +45,6 @@ SNI 预设: apps.mzstatic.com（默认）、xp.apple.com；允许自定义。
 全局操作影响所有节点。应用内核配置会短暂中断连接。
 Caddy 已移除；使用 nginx、fix-nginx 和 cert 命令。
 EOF
-}
-redact_json() {
-    jq 'walk(if type=="object" then with_entries(if (.key|test("password|private_key|uuid|api_token|key_path";"i")) then .value="[REDACTED]" else . end) else . end)'
 }
 status_report() {
     local ca=false na=false phase=none
@@ -111,7 +108,7 @@ main() {
             for selector in "$@"; do node=$(SB_REQUIRE_UNIQUE=1 select_node "$selector"); ids=$(jq --arg id "$(jq -r .id <<< "$node")" '.+[$id]|unique' <<< "$ids"); done
             [[ $(jq length <<< "$ids") != 0 ]] || die 'ddel 需要至少一个唯一节点'
             delete_nodes "$ids";;
-        i|info) select_node "${1:-}" | redact_json;;
+        i|info) select_node "${1:-}" | jq .;;
         list) read_state | jq '[.nodes[]|{id,name,protocol,port,backend_port,address,domain,outbound:{type:.outbound.type,server:.outbound.server}}]';;
         url|qr)
             node=$(select_node "${1:-}"); state=$(read_state); value=$(node_client "$state" "$(jq -r .id <<< "$node")")
@@ -159,7 +156,7 @@ main() {
             SB_FORCE_NGINX=1 apply_state "$(read_state)";;
         get-port) free_port "$(read_state)";;
         ip) detect_address;;
-        debug) status_report; if (( $# )); then select_node "$1" | redact_json; else read_state | redact_json; fi;;
+        debug) status_report; if (( $# )); then select_node "$1" | jq .; else read_state | jq .; fi;;
         backup) with_lock backup_create "${1:-}";;
         restore) [[ -n ${1:-} ]] || die 'restore 需要备份文件'; backup_restore "$1";;
         import) import_command "$@";;

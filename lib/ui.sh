@@ -237,8 +237,8 @@ ui_node_summary() {
 ui_view() {
     local node id choice
     node=$(select_node "${1:-}"); id=$(jq -r .id <<< "$node")
-    choice=$(ui_choose '查看节点' info '节点信息（凭据脱敏）' url '分享链接（含凭据）' qr '分享二维码（含凭据）')
-    if [[ $choice == info ]]; then ui_node_summary "$node"; else "$SB_HOME/bin/sb" "$choice" "$id"; fi
+    choice=$(ui_choose '查看节点' info '完整节点信息（包含真实凭据）' url '分享链接（含凭据）' qr '分享二维码（含凭据）')
+    "$SB_HOME/bin/sb" "$choice" "$id"
 }
 ui_web_url() {
     local choice

@@ -11,7 +11,7 @@ bootstrap_install() (
     done
     # Standalone installers are versioned with their release and always load
     # the matching complete package, never mutable main-branch modules.
-    release_version=0.1.1
+    release_version=0.1.2
     archive="sb-manager-$release_version.tar.gz"
     release_base="https://github.com/tktkl/sing-box/releases/download/v$release_version"
     temporary=$(mktemp -d)
